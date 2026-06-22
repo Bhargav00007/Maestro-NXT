@@ -119,6 +119,16 @@ export default function DashboardCards() {
       </div>
 
       {/* Alert Section – shows "No alerts" when empty */}
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {devices.map((device) => (
+          <DeviceCard
+            key={device.id}
+            device={device}
+            history={history[device.id] || []}
+          />
+        ))}
+      </div>
       {alerts.length > 0 ? (
         <div className="space-y-2">
           {alerts.map((alert, i) => (
@@ -130,19 +140,9 @@ export default function DashboardCards() {
         </div>
       ) : (
         <div className="rounded-md bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-          ✅ No alerts – all devices healthy
+          No alerts – all devices healthy
         </div>
       )}
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {devices.map((device) => (
-          <DeviceCard
-            key={device.id}
-            device={device}
-            history={history[device.id] || []}
-          />
-        ))}
-      </div>
     </div>
   );
 }
