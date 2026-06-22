@@ -116,7 +116,7 @@ export function MySidebar({ children }: MySidebarProps) {
           className="
             flex-1
             overflow-auto
-            p-6
+            
             md:ml-[11rem]
           "
         >
