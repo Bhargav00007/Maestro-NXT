@@ -32,13 +32,13 @@ export default function DashboardCards() {
   const [alerts, setAlerts] = useState<string[]>([]);
 
   const handleDeviceUpdate = (newDevices: Device[]) => {
-    // Debug: log to verify data arrives and changes
     console.log("Received device data:", newDevices);
 
     setDevices(newDevices);
 
     setHistory((prev) => {
       const updated = { ...prev };
+
       newDevices.forEach((d) => {
         const item: HistoryItem = {
           timestamp: d.timestamp,
@@ -47,36 +47,41 @@ export default function DashboardCards() {
           trafficIn: d.trafficIn,
           trafficOut: d.trafficOut,
         };
+
         if (!updated[d.id]) updated[d.id] = [];
+
         updated[d.id] = [...updated[d.id], item].slice(-30);
       });
+
       return updated;
     });
 
-    // Generate alerts
     const newAlerts: string[] = [];
+
     newDevices.forEach((d) => {
       if (d.status === "down") {
         newAlerts.push(`${d.name} is DOWN`);
       }
+
       if (d.cpu > 80) {
         newAlerts.push(`${d.name} CPU high: ${d.cpu}%`);
       }
+
       if (d.memory > 85) {
         newAlerts.push(`${d.name} Memory high: ${d.memory}%`);
       }
     });
+
     setAlerts(newAlerts);
   };
 
   useEffect(() => {
-    // Subscribe to Pusher
     const channel = pusherClient.subscribe("monitoring");
+
     channel.bind("device-updates", (data: Device[]) => {
       handleDeviceUpdate(data);
     });
 
-    // Initial fetch to get data immediately
     fetch("/api/pusher/trigger")
       .then((res) => res.json())
       .then((json) => {
@@ -84,7 +89,6 @@ export default function DashboardCards() {
       })
       .catch(console.error);
 
-    // Poll every 5 seconds to simulate fresh data (will be replaced by server cron later)
     const interval = setInterval(() => {
       fetch("/api/pusher/trigger")
         .then((res) => res.json())
@@ -104,22 +108,23 @@ export default function DashboardCards() {
   if (devices.length === 0) {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        Loading devices…
+        Loading devices...
       </div>
     );
   }
 
   return (
     <div className="space-y-6 p-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">Device Health</h2>
+
         <span className="text-sm text-muted-foreground">
           Real-time monitoring
         </span>
       </div>
 
-      {/* Alert Section – shows "No alerts" when empty */}
-
+      {/* Devices */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {devices.map((device) => (
           <DeviceCard
@@ -129,20 +134,31 @@ export default function DashboardCards() {
           />
         ))}
       </div>
-      {alerts.length > 0 ? (
-        <div className="space-y-2">
-          {alerts.map((alert, i) => (
-            <Alert key={i} variant="destructive">
-              <AlertTitle>Alert</AlertTitle>
-              <AlertDescription>{alert}</AlertDescription>
-            </Alert>
-          ))}
+
+      <div className="rounded-lg border bg-card p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Alerts</h3>
+
+          <span className="text-sm text-muted-foreground">
+            {alerts.length} Active
+          </span>
         </div>
-      ) : (
-        <div className="rounded-md bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-          No alerts – all devices healthy
-        </div>
-      )}
+
+        {alerts.length > 0 ? (
+          <div className="space-y-3">
+            {alerts.map((alert, index) => (
+              <Alert key={index} variant="destructive">
+                <AlertTitle>Warning</AlertTitle>
+                <AlertDescription>{alert}</AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-md bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            No alerts – all devices healthy
+          </div>
+        )}
+      </div>
     </div>
   );
 }
