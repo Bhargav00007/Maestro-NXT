@@ -1,5 +1,5 @@
 import WorldMap from "@/components/WorldMap";
-import React from "react";
+import DashboardCards from "@/components/DashboardCards";
 
 export default function HomePage() {
   return (
@@ -15,6 +15,12 @@ export default function HomePage() {
 
       <div className="flex-1">
         <WorldMap />
+      </div>
+
+      <div className="mx-auto w-full max-w-8xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="rounded-lg bg-card shadow-sm border">
+          <DashboardCards />
+        </div>
       </div>
     </div>
   );
