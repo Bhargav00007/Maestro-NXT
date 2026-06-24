@@ -54,7 +54,7 @@ export default function WorldMap() {
           });
         }, 1000);
 
-        // Step 3: Final zoom into Hyderabad with spin (2s - 3s)
+        // Step 3: Zoom into Hyderabad with dramatic pitch (2s - 5s)
         setTimeout(() => {
           map.flyTo({
             center: [hub.lng, hub.lat],
@@ -64,6 +64,17 @@ export default function WorldMap() {
             duration: 3000,
           });
         }, 2000);
+
+        // Step 4: Return to flat top-down view (5s - 6s)
+        setTimeout(() => {
+          map.flyTo({
+            center: [hub.lng, hub.lat],
+            zoom: 12,
+            bearing: 0,
+            pitch: 0,
+            duration: 1000,
+          });
+        }, 5000);
       }
     }, 1000); // 1 second delay for map to load
 
