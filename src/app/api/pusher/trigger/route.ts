@@ -34,7 +34,7 @@ export async function GET() {
     console.error(error);
     return NextResponse.json(
       { success: false, error: "Failed to trigger update" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

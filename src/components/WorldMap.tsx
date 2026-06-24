@@ -28,13 +28,13 @@ const arcs = destinations.map((dest) => ({
 export default function WorldMap() {
   const mapRef = useRef<any>(null);
 
-  // Animation on mount - total duration 3 seconds
+  // Animation on mount
   useEffect(() => {
     const timer = setTimeout(() => {
       if (mapRef.current) {
         const map = mapRef.current;
 
-        // Step 1: Start from Plainsboro (0 - 1s)
+        // Step 1: Start from Plainsboro
         map.flyTo({
           center: [destinations[0].lng, destinations[0].lat],
           zoom: 4,
@@ -43,7 +43,7 @@ export default function WorldMap() {
           duration: 1000,
         });
 
-        // Step 2: Fly to Ashburn with slight spin (1s - 2s)
+        // Step 2: Fly to Ashburn with slight spin
         setTimeout(() => {
           map.flyTo({
             center: [destinations[1].lng, destinations[1].lat],
@@ -54,36 +54,36 @@ export default function WorldMap() {
           });
         }, 1000);
 
-        // Step 3: Zoom into Hyderabad with dramatic pitch (2s - 5s)
+        // Step 3: Zoom into Hyderabad with dramatic pitch
         setTimeout(() => {
           map.flyTo({
             center: [hub.lng, hub.lat],
-            zoom: 12,
+            zoom: 5,
             bearing: 0,
             pitch: 60,
             duration: 3000,
           });
         }, 2000);
 
-        // Step 4: Return to flat top-down view (5s - 6s)
+        // Step 4: Return to flat top-down view
         setTimeout(() => {
           map.flyTo({
             center: [hub.lng, hub.lat],
-            zoom: 12,
+            zoom: 5,
             bearing: 0,
             pitch: 0,
             duration: 1000,
           });
         }, 5000);
       }
-    }, 1000); // 1 second delay for map to load
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className="flex w-full items-center justify-center overflow-hidden bg-background p-2">
-      <div className="h-[420px] w-full max-w-6xl overflow-hidden rounded-lg border bg-background shadow-sm">
+    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-background">
+      <div className="h-full w-full overflow-hidden rounded-lg border bg-background shadow-sm">
         <Map
           ref={mapRef}
           center={[hub.lng, hub.lat]}
@@ -98,35 +98,37 @@ export default function WorldMap() {
 
           <MapMarker longitude={hub.lng} latitude={hub.lat}>
             <MarkerContent>
-              <div className="size-3 rounded-full border-2 border-white bg-blue-500 shadow-md" />
+              <div className="size-2 rounded-full border-2 border-white bg-blue-500 shadow-md sm:size-3" />
               <MarkerLabel
                 position="top"
-                className="bg-background/80 rounded-sm px-1.5 py-0.5 text-[11px] font-semibold backdrop-blur"
+                className="bg-background/80 rounded-sm px-1 py-0.5 text-[9px] font-semibold backdrop-blur sm:px-1.5 sm:text-[11px]"
               >
                 {hub.name}
               </MarkerLabel>
             </MarkerContent>
           </MapMarker>
 
-          {/* Connected destinations markers */}
           {destinations.map((dest) => (
             <MapMarker key={dest.name} longitude={dest.lng} latitude={dest.lat}>
               <MarkerContent>
-                <div className="size-2 rounded-full border-2 border-white bg-emerald-500 shadow" />
-                <MarkerLabel position="top">{dest.name}</MarkerLabel>
+                <div className="size-1.5 rounded-full border-2 border-white bg-emerald-500 shadow sm:size-2" />
+                <MarkerLabel position="top" className="text-[8px] sm:text-[10px]">
+                  {dest.name}
+                </MarkerLabel>
               </MarkerContent>
             </MapMarker>
           ))}
 
-          {/* Standalone marker in Italy - no arc connection */}
           <MapMarker
             key={standaloneLocation.name}
             longitude={standaloneLocation.lng}
             latitude={standaloneLocation.lat}
           >
             <MarkerContent>
-              <div className="size-2 rounded-full border-2 border-white bg-purple-500 shadow" />
-              <MarkerLabel position="top">{standaloneLocation.name}</MarkerLabel>
+              <div className="size-1.5 rounded-full border-2 border-white bg-purple-500 shadow sm:size-2" />
+              <MarkerLabel position="top" className="text-[8px] sm:text-[10px]">
+                {standaloneLocation.name}
+              </MarkerLabel>
             </MarkerContent>
           </MapMarker>
         </Map>
