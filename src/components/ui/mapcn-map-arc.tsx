@@ -23,10 +23,7 @@ function cn(...inputs: Array<string | false | null | undefined>) {
   return inputs.filter(Boolean).join(" ");
 }
 
-const defaultStyles = {
-  dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-  light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-};
+const defaultLightStyle = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
 type Theme = "light" | "dark";
 
@@ -124,7 +121,7 @@ type MapProps = {
    * Theme for the map. If not provided, automatically detects system preference.
    * Pass your theme value here.
    */
-  theme?: Theme;
+  theme?: "light" | "dark";
   /** Custom map styles for light and dark themes. Overrides the default Carto styles. */
   styles?: {
     light?: MapStyleOption;
@@ -197,13 +194,8 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   const onViewportChangeRef = useRef(onViewportChange);
   onViewportChangeRef.current = onViewportChange;
 
-  const mapStyles = useMemo(
-    () => ({
-      dark: styles?.dark ?? defaultStyles.dark,
-      light: styles?.light ?? defaultStyles.light,
-    }),
-    [styles],
-  );
+  // Always use light style - ignore dark theme
+  const mapStyle = styles?.light ?? defaultLightStyle;
 
   // Expose the map instance to the parent component
   useImperativeHandle(ref, () => mapInstance as MapLibreGL.Map, [mapInstance]);
@@ -219,8 +211,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const initialStyle =
-      resolvedTheme === "dark" ? mapStyles.dark : mapStyles.light;
+    const initialStyle = mapStyle;
     currentStyleRef.current = initialStyle;
 
     const map = new MapLibreGL.Map({
@@ -236,9 +227,6 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
     const styleDataHandler = () => {
       clearStyleTimeout();
-      // Delay to ensure style is fully processed before allowing layer operations
-      // This is a workaround to avoid race conditions with the style loading
-      // else we have to force update every layer on setStyle change
       styleTimeoutRef.current = setTimeout(() => {
         setIsStyleLoaded(true);
         if (projection) {
@@ -300,12 +288,11 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     internalUpdateRef.current = false;
   }, [mapInstance, isControlled, viewport]);
 
-  // Handle style change
+  // Handle style change - always use light style
   useEffect(() => {
-    if (!mapInstance || !resolvedTheme) return;
+    if (!mapInstance) return;
 
-    const newStyle =
-      resolvedTheme === "dark" ? mapStyles.dark : mapStyles.light;
+    const newStyle = mapStyle;
 
     if (currentStyleRef.current === newStyle) return;
 
@@ -314,7 +301,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     setIsStyleLoaded(false);
 
     mapInstance.setStyle(newStyle, { diff: true });
-  }, [mapInstance, resolvedTheme, mapStyles, clearStyleTimeout]);
+  }, [mapInstance, mapStyle, clearStyleTimeout]);
 
   const contextValue = useMemo(
     () => ({
