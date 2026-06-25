@@ -11,9 +11,11 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/sidebar";
 
 import { pixelFont } from "@/lib/fonts";
+import { cn } from "@/lib/utils";
 
 import {
   User,
@@ -58,71 +60,103 @@ const items = [
   },
 ];
 
-export function MySidebar({ children }: MySidebarProps) {
+// This component is now inside the SidebarProvider context
+function SidebarContentWrapper() {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarContent>
-          <SidebarGroup>
-            <div className="px-3 py-4">
-              <h1 className="text-lg font-semibold">
+    <>
+      <SidebarContent>
+        <SidebarGroup>
+          <div className="px-3 py-4 mt-7">
+            {!isCollapsed ? (
+              <h1 className="text-lg font-semibold transition-opacity duration-300">
                 MAESTRO{" "}
                 <span className={`${pixelFont.className} text-xs`}>NXT</span>
               </h1>
-            </div>
+            ) : (
+              <div className="flex justify-center">
+                <span className="text-lg font-semibold">M</span>
+              </div>
+            )}
+          </div>
 
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <a href={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild tooltip={item.title}>
+                    <a href={item.url}>
+                      <item.icon />
+                      <span className="transition-opacity duration-300">
+                        {item.title}
+                      </span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
 
-        <SidebarFooter>
-          <SidebarMenuButton size="lg">
-            <User className="h-4 w-4" />
+      <SidebarFooter>
+        <SidebarMenuButton size="lg" tooltip="John Doe">
+          <User className="h-4 w-4" />
 
-            <div className="flex flex-col items-start">
-              <span className="text-sm font-medium">John Doe</span>
+          {!isCollapsed && (
+            <>
+              <div className="flex flex-col items-start transition-opacity duration-300">
+                <span className="text-sm font-medium">John Doe</span>
+                <span className="text-xs text-muted-foreground">
+                  john@example.com
+                </span>
+              </div>
+              <ChevronsUpDown className="ml-auto h-4 w-4 transition-transform duration-300" />
+            </>
+          )}
+        </SidebarMenuButton>
+      </SidebarFooter>
+    </>
+  );
+}
 
-              <span className="text-xs text-muted-foreground">
-                john@example.com
-              </span>
-            </div>
+// This component wraps everything in SidebarProvider
+function SidebarLayout({ children }: { children: React.ReactNode }) {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
-            <ChevronsUpDown className="ml-auto h-4 w-4" />
-          </SidebarMenuButton>
-        </SidebarFooter>
+  return (
+    <>
+      <Sidebar collapsible="icon" className="transition-all duration-300 ease-in-out">
+        <SidebarContentWrapper />
       </Sidebar>
 
-      <div className="flex min-h-screen flex-1 flex-col">
-        <div className="sticky top-0 z-50 flex h-14 items-center px-4 md:hidden">
+      <div className="flex min-h-screen flex-1 flex-col transition-all duration-500 ease-in-out">
+        <div className="sticky top-0 z-50 flex items-center px-4 mt-4">
           <SidebarTrigger>
             <Menu className="h-5 w-5" />
           </SidebarTrigger>
         </div>
 
         <main
-          className="
-            flex-1
-            overflow-auto
-            
-            md:ml-[11rem]
-          "
+          className={cn(
+            "flex-1 overflow-auto px-4 transition-all duration-300 ease-in-out",
+            !isCollapsed && "md:ml-[4rem]"
+          )}
         >
           {children}
         </main>
       </div>
+    </>
+  );
+}
+
+export function MySidebar({ children }: MySidebarProps) {
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <SidebarLayout>{children}</SidebarLayout>
     </SidebarProvider>
   );
 }

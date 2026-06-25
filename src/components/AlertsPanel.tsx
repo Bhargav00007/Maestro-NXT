@@ -14,15 +14,15 @@ export default function AlertsPanel() {
 
     devices.forEach((d) => {
       if (d.status === "down") {
-        newAlerts.push(`❌ ${d.name} is DOWN`);
+        newAlerts.push(`${d.name} is DOWN`);
       }
 
       if (d.cpu > 80) {
-        newAlerts.push(`⚠️ ${d.name} CPU high: ${d.cpu}%`);
+        newAlerts.push(`${d.name} CPU high: ${d.cpu}%`);
       }
 
       if (d.memory > 85) {
-        newAlerts.push(`⚠️ ${d.name} Memory high: ${d.memory}%`);
+        newAlerts.push(`${d.name} Memory high: ${d.memory}%`);
       }
     });
 

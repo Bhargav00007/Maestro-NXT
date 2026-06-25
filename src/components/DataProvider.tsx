@@ -26,14 +26,12 @@ export default function DataProvider({ children }: { children: React.ReactNode }
   };
 
   useEffect(() => {
-    // Subscribe to Pusher
     const channel = pusherClient.subscribe("monitoring");
 
     channel.bind("device-updates", (data: Device[]) => {
       handleDeviceUpdate(data);
     });
 
-    // Fetch initial data immediately
     fetch("/api/pusher/trigger")
       .then((res) => res.json())
       .then((json) => {
@@ -41,7 +39,6 @@ export default function DataProvider({ children }: { children: React.ReactNode }
       })
       .catch(console.error);
 
-    // Poll every 5 seconds
     const interval = setInterval(() => {
       fetch("/api/pusher/trigger")
         .then((res) => res.json())
