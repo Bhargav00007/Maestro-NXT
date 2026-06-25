@@ -39,8 +39,8 @@ const items = [
     icon: Home,
   },
   {
-    title: "Inbox",
-    url: "/inbox",
+    title: "About",
+    url: "/about",
     icon: Inbox,
   },
   {
@@ -60,7 +60,6 @@ const items = [
   },
 ];
 
-// This component is now inside the SidebarProvider context
 function SidebarContentWrapper() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
