@@ -77,7 +77,7 @@ function SidebarContentWrapper() {
               </h1>
             ) : (
               <div className="flex justify-center">
-                <span className="text-lg font-semibold">M</span>
+                <span className={`${pixelFont.className} text-xs`}>MN</span>
               </div>
             )}
           </div>
@@ -101,23 +101,7 @@ function SidebarContentWrapper() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenuButton size="lg" tooltip="John Doe">
-          <User className="h-4 w-4" />
-
-          {!isCollapsed && (
-            <>
-              <div className="flex flex-col items-start transition-opacity duration-300">
-                <span className="text-sm font-medium">John Doe</span>
-                <span className="text-xs text-muted-foreground">
-                  john@example.com
-                </span>
-              </div>
-              <ChevronsUpDown className="ml-auto h-4 w-4 transition-transform duration-300" />
-            </>
-          )}
-        </SidebarMenuButton>
-      </SidebarFooter>
+      
     </>
   );
 }
