@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useDeviceStore } from "@/lib/store";
 import DeviceCard from "@/components/DeviceCard";
+import RegionCards from "@/components/regionCards";
 
 interface HistoryItem {
   timestamp: string;
@@ -38,6 +39,9 @@ export default function DashboardCards() {
     });
   }, [devices]);
 
+  // Filter to show only the 6 main devices (default region)
+  const mainDevices = devices.filter(d => d.region === "default");
+
   if (devices.length === 0) {
     return (
       <div className="p-4 text-center text-sm text-muted-foreground sm:p-8">
@@ -47,18 +51,18 @@ export default function DashboardCards() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold sm:text-2xl">Device Health</h2>
         <span className="text-xs text-muted-foreground sm:text-sm">
-          Real-time monitoring
+          Real-time monitoring ({mainDevices.length} main devices)
         </span>
       </div>
 
-      {/* Devices Grid */}
+      {/* Devices Grid - Only shows 6 main devices */}
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-        {devices.map((device) => (
+        {mainDevices.map((device) => (
           <DeviceCard
             key={device.id}
             device={device}

@@ -15,6 +15,7 @@ interface Device {
   trafficIn: number;
   trafficOut: number;
   timestamp: string;
+  region: string;
 }
 
 export default function DataProvider({ children }: { children: React.ReactNode }) {

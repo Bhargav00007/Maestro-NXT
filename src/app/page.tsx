@@ -4,6 +4,7 @@ import { useSidebar } from "@/components/sidebar";
 import WorldMap from "@/components/WorldMap";
 import DashboardCards from "@/components/DashboardCards";
 import AlertsPanel from "@/components/AlertsPanel";
+import RegionCards from "@/components/regionCards";
 import { cn } from "@/lib/utils";
 
 function HomeContent() {
@@ -58,6 +59,9 @@ function HomeContent() {
 
           <div className="rounded-lg border shadow-md overflow-hidden bg-card p-4">
             <DashboardCards />
+          </div>
+          <div className="rounded-lg border shadow-md overflow-hidden bg-card p-4">
+            <RegionCards />
           </div>
         </div>
       </div>

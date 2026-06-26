@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 interface Device {
+  region: string;
   id: string;
   name: string;
   ip: string;
