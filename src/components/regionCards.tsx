@@ -20,7 +20,6 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
   const upDevices = devices.filter(d => d.status === "up").length;
   const downDevices = totalDevices - upDevices;
   
-  // Calculate average metrics
   const avgCpu = totalDevices > 0 
     ? Math.round(devices.reduce((sum, d) => sum + d.cpu, 0) / totalDevices) 
     : 0;
@@ -28,7 +27,6 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
     ? Math.round(devices.reduce((sum, d) => sum + d.memory, 0) / totalDevices) 
     : 0;
   
-  // Count device types
   const deviceTypes: Record<string, number> = {};
   devices.forEach(d => {
     deviceTypes[d.type] = (deviceTypes[d.type] || 0) + 1;
@@ -48,7 +46,6 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
 
   return (
     <div className="rounded-lg border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
-      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className={`rounded-full p-2 ${color}`}>
@@ -63,11 +60,10 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
           onClick={() => router.push(path)}
           className="text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded border hover:border-primary"
         >
-          View →
+          View 
         </button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-2 mb-3">
         <div className="text-center">
           <p className="text-lg font-bold">{totalDevices}</p>
@@ -83,7 +79,6 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
         </div>
       </div>
 
-      {/* Metrics */}
       <div className="flex gap-4 mb-3 text-xs">
         <div className="flex-1">
           <p className="text-muted-foreground">Avg CPU</p>
@@ -108,7 +103,6 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
         </div>
       </div>
 
-      {/* Quick status dots */}
       <div className="mt-2 flex gap-0.5 overflow-hidden">
         {devices.slice(0, 20).map((device, idx) => (
           <div
@@ -128,16 +122,8 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
 export default function RegionCards() {
   const devices = useDeviceStore((state) => state.devices);
   
-  // Group devices by region
   const regions = {
-    singapore: {
-      title: "Singapore",
-      region: "singapore",
-      color: "bg-red-100 text-red-600",
-      icon: <Wifi className="h-4 w-4" />,
-      devices: devices.filter(d => d.region === "singapore"),
-      path: "/singapore"
-    },
+    
     ashburn: {
       title: "Data Center (Ashburn)",
       region: "ashburn",
@@ -164,7 +150,6 @@ export default function RegionCards() {
     }
   };
 
-  // Default region for backward compatibility
   const defaultDevices = devices.filter(d => d.region === "default");
   const hasDefaultDevices = defaultDevices.length > 0;
 
@@ -177,13 +162,12 @@ export default function RegionCards() {
         </span>
       </div>
       
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Object.values(regions).map((region) => (
           <RegionCard key={region.region} {...region} />
         ))}
       </div>
 
-      {/* Show default devices if any (backward compatibility) */}
       {hasDefaultDevices && (
         <div className="mt-2 p-3 rounded-lg border border-dashed bg-muted/50">
           <p className="text-xs text-muted-foreground">

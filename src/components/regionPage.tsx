@@ -26,12 +26,10 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
   const devices = useDeviceStore((state) => state.devices);
   const [history, setHistory] = useState<Record<string, HistoryItem[]>>({});
 
-  // Memoize region devices to prevent unnecessary re-renders
   const regionDevices = useMemo(() => {
     return devices.filter(d => d.region === region);
   }, [devices, region]);
 
-  // Update history when devices change
   useEffect(() => {
     const updated = { ...history };
     let hasChanges = false;
@@ -50,7 +48,6 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
         hasChanges = true;
       }
 
-      // Only update if the last item is different
       const lastItem = updated[d.id][updated[d.id].length - 1];
       if (!lastItem || lastItem.timestamp !== d.timestamp) {
         updated[d.id] = [...updated[d.id], item].slice(-30);
@@ -74,7 +71,6 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
     ? Math.round(regionDevices.reduce((sum, d) => sum + d.memory, 0) / totalDevices) 
     : 0;
 
-  // Count device types
   const deviceTypes: Record<string, number> = {};
   regionDevices.forEach(d => {
     deviceTypes[d.type] = (deviceTypes[d.type] || 0) + 1;
@@ -102,7 +98,6 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
 
   return (
     <div className="space-y-6">
-      {/* Back Button */}
       <button
         onClick={() => router.push("/")}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -111,7 +106,6 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
         Back to Dashboard
       </button>
 
-      {/* Region Header */}
       <div className="flex items-center gap-4">
         <div className={`rounded-full p-3 ${color}`}>
           {icon}
@@ -122,7 +116,6 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
         </div>
       </div>
 
-      {/* Region Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">Total Devices</p>
@@ -156,7 +149,6 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
         </div>
       </div>
 
-      {/* Devices Grid */}
       <div>
         <h3 className="text-lg font-semibold mb-4">All Devices in {title}</h3>
         <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">

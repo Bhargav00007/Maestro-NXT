@@ -2,13 +2,7 @@ import { pusherServer } from "@/lib/pusher/server";
 import { NextResponse } from "next/server";
 
 const devices = [
-  // Singapore Region
-  { id: "sg-rtr-01", name: "SG Core Router", ip: "10.1.0.1", type: "router", region: "singapore" },
-  { id: "sg-sw-01", name: "SG Distribution Switch", ip: "10.1.0.2", type: "switch", region: "singapore" },
-  { id: "sg-sw-02", name: "SG Access Switch", ip: "10.1.0.3", type: "switch", region: "singapore" },
-  { id: "sg-rtr-02", name: "SG Edge Router", ip: "10.1.0.4", type: "router", region: "singapore" },
-  { id: "sg-fw-01", name: "SG Firewall", ip: "10.1.0.5", type: "firewall", region: "singapore" },
-  { id: "sg-lb-01", name: "SG Load Balancer", ip: "10.1.0.6", type: "loadbalancer", region: "singapore" },
+  
 
   // Data Center - Ashburn
   { id: "ash-rtr-01", name: "Ashburn Core Router", ip: "10.2.0.1", type: "router", region: "ashburn" },
@@ -35,7 +29,6 @@ const devices = [
   { id: "hyd-lb-01", name: "HYD Load Balancer", ip: "10.4.0.6", type: "loadbalancer", region: "hyderabad" },
   { id: "hyd-st-01", name: "HYD Storage", ip: "10.4.0.7", type: "storage", region: "hyderabad" },
 
-  // Keep original devices for backward compatibility
   { id: "rtr-01", name: "Core Router", ip: "10.0.0.1", type: "router", region: "default" },
   { id: "sw-01", name: "Distribution Switch", ip: "10.0.0.2", type: "switch", region: "default" },
   { id: "sw-02", name: "Access Switch", ip: "10.0.0.3", type: "switch", region: "default" },

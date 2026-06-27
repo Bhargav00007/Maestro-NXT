@@ -44,16 +44,13 @@ function HomeContent() {
             !isCollapsed ? "max-w-6xl" : "max-w-7xl"
           )}
         >
-          {/* Map and Alert Panel - Scrollable on mobile */}
           <div className="flex flex-col gap-3 lg:gap-6 lg:grid lg:grid-cols-[3fr_1fr]">
-            {/* Map Container - Scrollable if content overflows */}
             <div className="h-[400px] sm:h-[500px] lg:h-[400px] min-h-0">
               <div className="h-full rounded-lg border shadow-md overflow-auto bg-card">
                 <WorldMap />
               </div>
             </div>
             
-            {/* Alert Panel Container - Scrollable if content overflows */}
             <div className="h-[300px] sm:h-[350px] lg:h-[400px] min-h-0">
               <div className="h-full rounded-lg border shadow-md overflow-auto bg-card">
                 <AlertsPanel />
