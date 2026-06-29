@@ -27,13 +27,11 @@ const arcs = destinations.map((dest) => ({
 export default function WorldMap() {
   const mapRef = useRef<any>(null);
 
-  // Animation on mount
   useEffect(() => {
     const timer = setTimeout(() => {
       if (mapRef.current) {
         const map = mapRef.current;
 
-        // Step 1: Start from Plainsboro
         map.flyTo({
           center: [destinations[0].lng, destinations[0].lat],
           zoom: 4,
@@ -42,7 +40,6 @@ export default function WorldMap() {
           duration: 1000,
         });
 
-        // Step 2: Fly to Ashburn with slight spin
         setTimeout(() => {
           map.flyTo({
             center: [destinations[1].lng, destinations[1].lat],
@@ -53,7 +50,6 @@ export default function WorldMap() {
           });
         }, 1000);
 
-        // Step 3: Zoom into Hyderabad with dramatic pitch
         setTimeout(() => {
           map.flyTo({
             center: [hub.lng, hub.lat],
@@ -64,7 +60,6 @@ export default function WorldMap() {
           });
         }, 2000);
 
-        // Step 4: Return to flat top-down view
         setTimeout(() => {
           map.flyTo({
             center: [hub.lng, hub.lat],

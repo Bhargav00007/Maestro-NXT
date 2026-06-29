@@ -4,7 +4,6 @@ import { pixelFont } from "@/lib/fonts";
 const About = () => {
   return (
     <div className="lg:my-10 lg:mx-36 mx-5 my-5">
-      {/* Hero Section */}
       <div className="max-w-4xl pb-5">
         <h1 className="text-2xl font-bold tracking-tight md:text-4xl lg:text-4xl">
           About{" "}
@@ -19,7 +18,6 @@ const About = () => {
         </p>
       </div>
 
-      {/* Overview */}
       <div className="mt-8">
         <h2 className="text-2xl font-bold lg:text-3xl mb-4">Overview</h2>
         <p className="lg:text-xl text-lg leading-relaxed">
@@ -37,7 +35,6 @@ const About = () => {
         </p>
       </div>
 
-      {/* How It Works - Real-time Data Flow */}
       <div className="mt-12">
         <h2 className="text-2xl font-bold lg:text-3xl mb-6">
           How It Works: Real-time Data Flow
@@ -98,7 +95,6 @@ const About = () => {
         </h2>
         
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Frontend */}
           <div className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
             <h3 className="text-xl font-semibold text-blue-600">Frontend</h3>
             <ul className="mt-3 space-y-2">
