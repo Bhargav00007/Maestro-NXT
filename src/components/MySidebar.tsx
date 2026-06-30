@@ -9,7 +9,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
   SidebarTrigger,
   useSidebar,
 } from "@/components/sidebar";
@@ -99,13 +98,10 @@ function SidebarContentWrapper() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      
     </>
   );
 }
 
-// This component wraps everything in SidebarProvider
 function SidebarLayout({ children }: { children: React.ReactNode }) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -117,7 +113,7 @@ function SidebarLayout({ children }: { children: React.ReactNode }) {
       </Sidebar>
 
       <div className="flex min-h-screen flex-1 flex-col transition-all duration-500 ease-in-out">
-        <div className="sticky top-0 z-50 flex items-center px-4 mt-4">
+        <div className="fixed left-4 top-4 z-50">
           <SidebarTrigger>
             <Menu className="h-5 w-5" />
           </SidebarTrigger>
@@ -125,7 +121,7 @@ function SidebarLayout({ children }: { children: React.ReactNode }) {
 
         <main
           className={cn(
-            "flex-1 overflow-auto px-4 transition-all duration-300 ease-in-out",
+            "flex-1 overflow-auto px-4 lg:pt-2 pt-10 transition-all duration-300 ease-in-out",
             !isCollapsed && "md:ml-[4rem]"
           )}
         >
