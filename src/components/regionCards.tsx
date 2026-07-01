@@ -123,14 +123,13 @@ export default function RegionCards() {
   const devices = useDeviceStore((state) => state.devices);
   
   const regions = {
-    
-    ashburn: {
-      title: "Data Center (Ashburn)",
-      region: "ashburn",
-      color: "bg-blue-100 text-blue-600",
+    culpepper: {
+      title: "Data Center (Culpepper)",
+      region: "culpepper",
+      color: "bg-green-100 text-green-600",
       icon: <Server className="h-4 w-4" />,
-      devices: devices.filter(d => d.region === "ashburn"),
-      path: "/ashburn"
+      devices: devices.filter(d => d.region === "culpepper"),
+      path: "/culpepper"
     },
     plainsboro: {
       title: "Data Center (Plainsboro)",

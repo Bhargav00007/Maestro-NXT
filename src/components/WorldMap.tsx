@@ -13,7 +13,7 @@ const hub = { name: "Hyderabad", lng: 78.4867, lat: 17.3850 };
 
 const destinations = [
   { name: "Plainsboro", lng: -74.599, lat: 40.3345 },
-  { name: "Ashburn", lng: -77.4874, lat: 39.0438 },
+  { name: "Culpepper", lng: -77.9964, lat: 38.4732 }, // Culpepper, Virginia
 ];
 
 const standaloneLocation = { name: "Milan", lng: 9.1900, lat: 45.4642 };
