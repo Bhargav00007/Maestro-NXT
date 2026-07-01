@@ -40,16 +40,13 @@ function randomInt(min: number, max: number) {
 
 function generateDeviceData() {
   return devices.map((device) => {
-    // Determine status first
     const isUp = Math.random() > 0.15;
     
     return {
       ...device,
-      // If device is down, set CPU and memory to 0
       cpu: isUp ? randomInt(10, 85) : 0,
       memory: isUp ? randomInt(20, 90) : 0,
       status: isUp ? "up" : "down",
-      // Traffic also 0 when offline
       trafficIn: isUp ? randomInt(100, 5000) : 0,
       trafficOut: isUp ? randomInt(50, 3000) : 0,
       timestamp: new Date().toISOString(),

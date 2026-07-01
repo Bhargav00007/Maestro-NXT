@@ -7,13 +7,14 @@ import {
   MarkerContent,
   MarkerLabel,
 } from "@/components/ui/mapcn-map-arc";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Minus, Home } from "lucide-react";
 
 const hub = { name: "Hyderabad", lng: 78.4867, lat: 17.3850 };
 
 const destinations = [
   { name: "Plainsboro", lng: -74.599, lat: 40.3345 },
-  { name: "Culpepper", lng: -77.9964, lat: 38.4732 }, // Culpepper, Virginia
+  { name: "Culpepper", lng: -77.9964, lat: 38.4732 }, 
 ];
 
 const standaloneLocation = { name: "Milan", lng: 9.1900, lat: 45.4642 };
@@ -26,6 +27,56 @@ const arcs = destinations.map((dest) => ({
 
 export default function WorldMap() {
   const mapRef = useRef<any>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const flyToHyderabad = () => {
+    if (mapRef.current) {
+      setIsAnimating(true);
+      const map = mapRef.current;
+      
+      map.flyTo({
+        center: [hub.lng, hub.lat],
+        zoom: 5,
+        bearing: 0,
+        pitch: 60,
+        duration: 2000,
+      });
+
+      setTimeout(() => {
+        map.flyTo({
+          center: [hub.lng, hub.lat],
+          zoom: 5,
+          bearing: 0,
+          pitch: 0,
+          duration: 1500,
+        });
+        setTimeout(() => setIsAnimating(false), 2000);
+      }, 2000);
+    }
+  };
+
+  const zoomIn = () => {
+    if (mapRef.current) {
+      const map = mapRef.current;
+      const currentZoom = map.getZoom();
+      map.flyTo({
+        zoom: Math.min(currentZoom + 1, 20),
+        duration: 500,
+      });
+    }
+  };
+
+  // Function to zoom out
+  const zoomOut = () => {
+    if (mapRef.current) {
+      const map = mapRef.current;
+      const currentZoom = map.getZoom();
+      map.flyTo({
+        zoom: Math.max(currentZoom - 1, 1),
+        duration: 500,
+      });
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -76,7 +127,7 @@ export default function WorldMap() {
   }, []);
 
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-background">
+    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-background relative">
       <div className="h-full w-full overflow-hidden rounded-lg border bg-background shadow-sm">
         <Map
           ref={mapRef}
@@ -126,6 +177,35 @@ export default function WorldMap() {
             </MarkerContent>
           </MapMarker>
         </Map>
+      </div>
+
+      <div className="absolute bottom-10 right-4 flex flex-col gap-1.5">
+        <button
+          onClick={zoomIn}
+          className="flex h-8 w-8 items-center justify-center rounded-md bg-background/90 text-foreground shadow-lg backdrop-blur-sm transition-all hover:bg-background hover:shadow-xl border"
+          aria-label="Zoom in"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+
+        <button
+          onClick={zoomOut}
+          className="flex h-8 w-8 items-center justify-center rounded-md bg-background/90 text-foreground shadow-lg backdrop-blur-sm transition-all hover:bg-background hover:shadow-xl border"
+          aria-label="Zoom out"
+        >
+          <Minus className="h-4 w-4" />
+        </button>
+
+        <button
+          onClick={flyToHyderabad}
+          disabled={isAnimating}
+          className={`flex h-8 w-8 items-center justify-center rounded-md bg-background/90 text-foreground shadow-lg backdrop-blur-sm transition-all hover:bg-background hover:shadow-xl border ${
+            isAnimating ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+          aria-label="Fly to Hyderabad"
+        >
+          <Home className={`h-4 w-4 ${isAnimating ? 'animate-pulse' : ''}`} />
+        </button>
       </div>
     </div>
   );

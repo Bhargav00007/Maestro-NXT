@@ -21,9 +21,8 @@ export default function LayoutClient({
     return () => clearTimeout(timer);
   }, []);
 
-  // On server or before hydration, return null or a simple loading state
   if (!mounted) {
-    return null; // or return <div className="min-h-screen" />;
+    return null; 
   }
 
   if (loading) {
