@@ -25,6 +25,7 @@ import {
   Search,
   Settings,
   Menu,
+  Bug,
 } from "lucide-react";
 
 interface MySidebarProps {
@@ -56,6 +57,11 @@ const items = [
     title: "Packets",
     url: "/packets",
     icon: Settings,
+  },
+  {
+    title: "Zabbix",
+    url: "/zabbix",
+    icon: Bug,
   },
 ];
 
