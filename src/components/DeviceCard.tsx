@@ -129,13 +129,13 @@ export default function DeviceCard({ device, history }: DeviceCardProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0"
+              className=" "
               onClick={() =>
                 router.push(`/zabbix/details?hostId=${device.zabbixHostId}`)
               }
               title="View in Zabbix"
             >
-              <Eye className="h-3 w-3" />
+              View <Eye className="h-4 w-4 ml-1" />
             </Button>
           )}
         </div>

@@ -195,7 +195,34 @@ export async function GET(request: NextRequest) {
         break;
       }
 
-      // ✅ NEW: Fetch historical events
+      // ✅ NEW: Fetch only active problem triggers (value=1)
+      case "problems": {
+        const params: any = {
+          output: [
+            "triggerid",
+            "description",
+            "priority",
+            "status",
+            "value",
+            "lastchange",
+          ],
+          selectHosts: ["hostid", "host", "name"],
+          selectItems: ["itemid", "name", "key_"],
+          filter: {
+            value: 1,        // only PROBLEM
+            status: 0,       // only enabled triggers
+          },
+          sortfield: "priority",
+          sortorder: "DESC",
+          limit: 100,
+        };
+        if (hostId) {
+          params.hostids = hostId;
+        }
+        result = await zabbixRequest("trigger.get", params, token);
+        break;
+      }
+
       case "events": {
         const params: any = {
           output: [
@@ -217,7 +244,6 @@ export async function GET(request: NextRequest) {
         if (hostId) {
           params.hostids = hostId;
         }
-        // Optionally filter only trigger events (source=0)
         params.filter = { source: 0 };
         result = await zabbixRequest("event.get", params, token);
         break;

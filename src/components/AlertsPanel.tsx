@@ -2,40 +2,31 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useDeviceStore } from "@/lib/store";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Bell, BellOff, AlertCircle, AlertTriangle } from "lucide-react";
 
 interface ZabbixTrigger {
   triggerid: string;
   description: string;
-  priority: string; 
-  status: string;   
-  value: string;    
-  hosts?: Array<{ hostid: string; host: string }>;
+  priority: string;
+  status: string;
+  value: string;
+  lastchange: string;
+  hosts?: Array<{ hostid: string; host: string; name?: string }>;
 }
-
-const priorityLevels = {
-  "0": { label: "Not classified", color: "bg-gray-500" },
-  "1": { label: "Information", color: "bg-blue-500" },
-  "2": { label: "Warning", color: "bg-yellow-500" },
-  "3": { label: "Average", color: "bg-orange-500" },
-  "4": { label: "High", color: "bg-red-500" },
-  "5": { label: "Disaster", color: "bg-red-700" },
-};
 
 export default function AlertsPanel() {
   const devices = useDeviceStore((state) => state.devices);
-  const [localAlerts, setLocalAlerts] = useState<string[]>([]);
   const [zabbixProblems, setZabbixProblems] = useState<ZabbixTrigger[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchZabbixProblems = useCallback(async () => {
     try {
-      const res = await fetch("/api/zabbix?action=triggers");
+      const res = await fetch("/api/zabbix?action=problems");
       const data = await res.json();
       if (data.success && data.data) {
         const problems = data.data.filter((t: ZabbixTrigger) => t.value === "1");
+        problems.sort((a: { lastchange: string; }, b: { lastchange: string; }) => parseInt(b.lastchange) - parseInt(a.lastchange));
         setZabbixProblems(problems);
       } else {
         setError("Failed to fetch Zabbix problems");
@@ -48,80 +39,96 @@ export default function AlertsPanel() {
     }
   }, []);
 
-  const generateLocalAlerts = useCallback(() => {
-    const newAlerts: string[] = [];
+  const getLocalAlerts = useCallback(() => {
+    const alerts: string[] = [];
     devices.forEach((d) => {
       if (d.status === "down") {
-        newAlerts.push(`${d.name} is DOWN`);
+        alerts.push(`${d.name} is DOWN`);
       }
       if (d.cpu > 80) {
-        newAlerts.push(`${d.name} CPU high: ${d.cpu}%`);
+        alerts.push(`${d.name} CPU high: ${d.cpu}%`);
       }
       if (d.memory > 85) {
-        newAlerts.push(`${d.name} Memory high: ${d.memory}%`);
+        alerts.push(`${d.name} Memory high: ${d.memory}%`);
       }
     });
-    setLocalAlerts(newAlerts);
+    return alerts;
   }, [devices]);
 
   useEffect(() => {
     fetchZabbixProblems();
-    generateLocalAlerts();
-
-    const interval = setInterval(() => {
-      fetchZabbixProblems();
-      generateLocalAlerts();
-    }, 15000); 
-
-    return () => clearInterval(interval);
-  }, [fetchZabbixProblems, generateLocalAlerts]);
+  }, [fetchZabbixProblems]);
 
   useEffect(() => {
     if (devices.length > 0) {
       fetchZabbixProblems();
-      generateLocalAlerts();
     }
-  }, [devices, fetchZabbixProblems, generateLocalAlerts]);
+  }, [devices, fetchZabbixProblems]);
+
+  const getRelativeTime = (seconds: string | number): string => {
+    const now = Math.floor(Date.now() / 1000);
+    const then = typeof seconds === "string" ? parseInt(seconds, 10) : seconds;
+    const diff = now - then;
+    if (diff < 0) return "just now";
+    const minutes = Math.floor(diff / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return `${diff}s ago`;
+  };
 
   const allAlerts = [
     ...zabbixProblems.map((trigger) => ({
       id: trigger.triggerid,
-      message: `${trigger.hosts?.[0]?.host || "Host"}: ${trigger.description}`,
+      message: `${trigger.hosts?.[0]?.name || trigger.hosts?.[0]?.host || "Unknown"}: ${trigger.description}`,
       type: "zabbix",
       priority: parseInt(trigger.priority, 10) || 0,
+      lastchange: trigger.lastchange,
     })),
-    ...localAlerts.map((msg, idx) => ({
+    ...getLocalAlerts().map((msg, idx) => ({
       id: `local-${idx}`,
       message: msg,
       type: "local",
-      priority: 2, 
+      priority: 2,
+      lastchange: Math.floor(Date.now() / 1000).toString(),
     })),
   ];
 
-  allAlerts.sort((a, b) => {
-    if (a.type === "zabbix" && a.priority >= 4) return -1;
-    if (b.type === "zabbix" && b.priority >= 4) return 1;
-    if (a.type === "local" && b.type === "zabbix") return 1;
-    if (b.type === "local" && a.type === "zabbix") return -1;
-    return 0;
-  });
+  allAlerts.sort((a, b) => parseInt(b.lastchange) - parseInt(a.lastchange));
 
   const isConnected = devices.length > 0;
 
-  const getAlertVariant = (alert: typeof allAlerts[0]) => {
+  const getAlertSeverity = (alert: typeof allAlerts[0]) => {
     if (alert.type === "zabbix") {
-      if (alert.priority >= 4) return "destructive";
+      if (alert.priority >= 4) return "critical";
       if (alert.priority >= 2) return "warning";
-      return "default";
+      return "info";
     }
     return "warning";
   };
 
   const getAlertIcon = (alert: typeof allAlerts[0]) => {
-    if (alert.type === "zabbix" && alert.priority >= 4) {
-      return <AlertCircle className="h-4 w-4" />;
-    }
+    const sev = getAlertSeverity(alert);
+    if (sev === "critical") return <AlertCircle className="h-4 w-4" />;
     return <AlertTriangle className="h-4 w-4" />;
+  };
+
+  // Format: Host (bold, own line) + description (small, next line)
+  const renderMessage = (message: string) => {
+    const colonIndex = message.indexOf(":");
+    if (colonIndex === -1) {
+      return <span className="text-xs sm:text-sm">{message}</span>;
+    }
+    const host = message.substring(0, colonIndex).trim();
+    const rest = message.substring(colonIndex + 1).trim();
+    return (
+      <div className="flex flex-col">
+        <strong className="text-xs sm:text-sm">{host}</strong>
+        <span className="text-[10px] sm:text-xs text-muted-foreground">{rest}</span>
+      </div>
+    );
   };
 
   return (
@@ -142,12 +149,14 @@ export default function AlertsPanel() {
               <span className="ml-2 text-[10px] text-muted-foreground animate-pulse">loading...</span>
             )}
           </div>
-          <span className="text-[10px] text-muted-foreground sm:text-xs">
-            {allAlerts.length} Active
-          </span>
-          <a href="/alerts" className="text-[10px] text-muted-foreground hover:text-foreground sm:text-xs">
-            View All
-          </a>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground sm:text-xs">
+              {allAlerts.length} Active
+            </span>
+            <a href="/alerts" className="text-[10px] text-muted-foreground hover:text-foreground sm:text-xs">
+              View All
+            </a>
+          </div>
         </div>
       </div>
 
@@ -155,38 +164,41 @@ export default function AlertsPanel() {
         {allAlerts.length > 0 ? (
           <div className="space-y-2 sm:space-y-3">
             {allAlerts.map((alert) => {
-              const variant = getAlertVariant(alert);
-              const isRed = variant === "destructive";
-              const isYellow = variant === "warning";
+              const severity = getAlertSeverity(alert);
+              const isCritical = severity === "critical";
+              const isWarning = severity === "warning";
+
+              let bgClass = "bg-muted/30";
+              if (isCritical) bgClass = "bg-red-50 dark:bg-red-950/20";
+              else if (isWarning) bgClass = "bg-yellow-50 dark:bg-yellow-950/20";
+              else bgClass = "bg-blue-50 dark:bg-blue-950/20";
+
+              let borderClass = "border-l-blue-500";
+              if (isCritical) borderClass = "border-l-red-500";
+              else if (isWarning) borderClass = "border-l-yellow-500";
+
               return (
-                <Alert
+                <div
                   key={alert.id}
-                  variant={isRed ? "destructive" : "default"}
-                  className={`text-[10px] sm:text-xs border-l-4 ${
-                    isRed
-                      ? "border-l-red-500 bg-red-50 dark:bg-red-950/20"
-                      : isYellow
-                      ? "border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20"
-                      : "border-l-blue-500"
-                  }`}
+                  className={`rounded-lg border p-3 text-[10px] sm:text-xs border-l-4 ${borderClass} ${bgClass}`}
                 >
                   <div className="flex items-start gap-2">
                     {getAlertIcon(alert)}
-                    <div>
-                      <AlertTitle className="text-[10px] font-semibold sm:text-xs">
-                        {alert.type === "zabbix" ? "Zabbix Problem" : "Threshold Alert"}
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
                         {alert.type === "zabbix" && (
-                          <span className="ml-2 text-[8px] font-normal text-muted-foreground sm:text-[10px]">
-                            (Priority {alert.priority})
+                          <span className="text-[8px] font-normal text-muted-foreground sm:text-[10px]">
+                            Priority {alert.priority}
                           </span>
                         )}
-                      </AlertTitle>
-                      <AlertDescription className="text-[10px] sm:text-xs">
-                        {alert.message}
-                      </AlertDescription>
+                        <span className="text-[8px] text-muted-foreground sm:text-[10px]">
+                          {getRelativeTime(alert.lastchange)}
+                        </span>
+                      </div>
+                      <div className="mt-0.5">{renderMessage(alert.message)}</div>
                     </div>
                   </div>
-                </Alert>
+                </div>
               );
             })}
           </div>

@@ -53,6 +53,7 @@ interface LocalAlert {
   type: "local";
   priority: number;
   host?: string;
+  timestamp: number; // for sorting
 }
 
 export default function AlertsPage() {
@@ -67,11 +68,13 @@ export default function AlertsPage() {
   // Fetch active triggers (problems) from Zabbix
   const fetchActiveTriggers = useCallback(async () => {
     try {
-      const res = await fetch("/api/zabbix?action=triggers");
+      const res = await fetch("/api/zabbix?action=problems");
       const data = await res.json();
       if (data.success && data.data) {
-        // Filter to only PROBLEM triggers (value=1)
+        // Already filtered for problems, but ensure value=1
         const problems = data.data.filter((t: ZabbixTrigger) => t.value === "1");
+        // Sort by lastchange descending (latest first)
+        problems.sort((a: { lastchange: string; }, b: { lastchange: string; }) => parseInt(b.lastchange) - parseInt(a.lastchange));
         return problems;
       }
       return [];
@@ -87,7 +90,9 @@ export default function AlertsPage() {
       const res = await fetch("/api/zabbix?action=events&limit=200");
       const data = await res.json();
       if (data.success && data.data) {
-        return data.data;
+        // Sort by clock descending (latest first)
+        const events = data.data.sort((a: ZabbixEvent, b: ZabbixEvent) => parseInt(b.clock) - parseInt(a.clock));
+        return events;
       }
       return [];
     } catch (err) {
@@ -99,14 +104,16 @@ export default function AlertsPage() {
   // Generate local alerts from store
   const generateLocalAlerts = useCallback((): LocalAlert[] => {
     const alerts: LocalAlert[] = [];
+    const now = Date.now() / 1000;
     devices.forEach((d) => {
       if (d.status === "down") {
         alerts.push({
           id: `local-down-${d.id}`,
           message: `${d.name} is DOWN`,
           type: "local",
-          priority: 4, // treat as high
+          priority: 4,
           host: d.name,
+          timestamp: now,
         });
       }
       if (d.cpu > 80) {
@@ -116,6 +123,7 @@ export default function AlertsPage() {
           type: "local",
           priority: 2,
           host: d.name,
+          timestamp: now,
         });
       }
       if (d.memory > 85) {
@@ -125,6 +133,7 @@ export default function AlertsPage() {
           type: "local",
           priority: 2,
           host: d.name,
+          timestamp: now,
         });
       }
     });
@@ -142,17 +151,17 @@ export default function AlertsPage() {
 
       const local = generateLocalAlerts();
 
-      // Combine: Zabbix problems + local alerts
+      // Combine: Zabbix problems (already sorted by latest) + local alerts
       const combined: (ZabbixTrigger | LocalAlert)[] = [
         ...triggers,
         ...local,
       ];
 
-      // Sort by priority descending (higher first)
+      // Sort by timestamp descending (latest first)
       combined.sort((a, b) => {
-        const pa = typeof a.priority === "string" ? parseInt(a.priority, 10) : a.priority;
-        const pb = typeof b.priority === "string" ? parseInt(b.priority, 10) : b.priority;
-        return pb - pa;
+        const ta = 'lastchange' in a ? parseInt(a.lastchange) : (a as LocalAlert).timestamp;
+        const tb = 'lastchange' in b ? parseInt(b.lastchange) : (b as LocalAlert).timestamp;
+        return tb - ta;
       });
 
       setActiveAlerts(combined);
@@ -167,15 +176,12 @@ export default function AlertsPage() {
     }
   }, [fetchActiveTriggers, fetchHistory, generateLocalAlerts]);
 
-  // Initial load and refresh on Pusher updates (devices change)
+  // Initial load on mount
   useEffect(() => {
     loadData();
-    // Refresh every 30 seconds as fallback
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
   }, [loadData]);
 
-  // Also refresh when devices store updates (Pusher)
+  // Refresh when devices store updates (triggered by Pusher WebSocket)
   useEffect(() => {
     if (devices.length > 0) {
       loadData();
@@ -217,7 +223,6 @@ export default function AlertsPage() {
     return labels[p] || labels[0];
   };
 
-  // For local alerts, we have priority 2 or 4
   const getAlertVariant = (alert: any) => {
     if ('type' in alert && alert.type === 'local') {
       if (alert.priority >= 4) return "destructive";
@@ -319,7 +324,7 @@ export default function AlertsPage() {
                       ? (alert as LocalAlert).priority
                       : parseInt((alert as ZabbixTrigger).priority, 10);
                     const lastchange = isLocal
-                      ? null
+                      ? (alert as LocalAlert).timestamp.toString()
                       : (alert as ZabbixTrigger).lastchange;
                     const variant = getAlertVariant(alert);
                     const priorityInfo = isLocal
@@ -414,9 +419,6 @@ export default function AlertsPage() {
                         const priority = trigger ? parseInt(trigger.priority, 10) : 0;
                         const priorityInfo = getPriorityInfo(priority);
                         const isProblem = event.value === '1';
-                        // For duration, we need to find the corresponding OK event? We'll just show the event time.
-                        // Zabbix event doesn't have duration directly; we can compute if we had recovery events.
-                        // For simplicity, we show event time.
                         return (
                           <tr key={event.eventid} className="border-b hover:bg-muted/30">
                             <td className="p-2 text-xs">{formatTime(event.clock)}</td>
@@ -439,7 +441,6 @@ export default function AlertsPage() {
                               </span>
                             </td>
                             <td className="p-2 text-xs">
-                              {/* We don't have duration in event.get easily; we can show the clock time */}
                               {new Date(Number(event.clock) * 1000).toLocaleTimeString()}
                             </td>
                           </tr>
