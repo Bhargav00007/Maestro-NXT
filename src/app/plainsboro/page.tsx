@@ -7,7 +7,7 @@ export default function PlainsboroPage() {
     <RegionLayout>
       <RegionPage
         region="plainsboro"
-        title="Data Center (Plainsboro)"
+        title="Plainsboro"
         icon={<Database className="h-6 w-6" />}
         color="bg-purple-100 text-purple-600"
       />

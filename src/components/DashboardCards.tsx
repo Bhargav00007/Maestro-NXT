@@ -38,8 +38,8 @@ export default function DashboardCards() {
     });
   }, [devices]);
 
-  // Only show Zabbix devices
-  const zabbixDevices = devices.filter((d) => d.region === "zabbix");
+  // 👇 Show all devices (remove region filter)
+  const allDevices = devices;
 
   if (devices.length === 0) {
     return (
@@ -49,16 +49,8 @@ export default function DashboardCards() {
     );
   }
 
-  if (zabbixDevices.length === 0) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-muted-foreground">No Zabbix devices found</p>
-      </div>
-    );
-  }
-
-  const upCount = zabbixDevices.filter((d) => d.status === "up").length;
-  const downCount = zabbixDevices.filter((d) => d.status === "down").length;
+  const upCount = allDevices.filter((d) => d.status === "up").length;
+  const downCount = allDevices.filter((d) => d.status === "down").length;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -66,7 +58,7 @@ export default function DashboardCards() {
         <div>
           <h2 className="text-lg font-semibold sm:text-2xl">Device Health</h2>
           <p className="text-xs text-muted-foreground">
-            {zabbixDevices.length} devices • {upCount} online • {downCount} offline
+            {allDevices.length} devices • {upCount} online • {downCount} offline
           </p>
         </div>
         <span className="text-xs text-muted-foreground sm:text-sm">
@@ -75,7 +67,7 @@ export default function DashboardCards() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-        {zabbixDevices.map((device) => (
+        {allDevices.map((device) => (
           <DeviceCard
             key={device.id}
             device={device}

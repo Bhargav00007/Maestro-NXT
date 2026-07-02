@@ -15,18 +15,18 @@ interface RegionCardProps {
 
 function RegionCard({ region, title, icon, devices, color, path }: RegionCardProps) {
   const router = useRouter();
-  
+
   const totalDevices = devices.length;
   const upDevices = devices.filter(d => d.status === "up").length;
   const downDevices = totalDevices - upDevices;
-  
-  const avgCpu = totalDevices > 0 
-    ? Math.round(devices.reduce((sum, d) => sum + d.cpu, 0) / totalDevices) 
+
+  const avgCpu = totalDevices > 0
+    ? Math.round(devices.reduce((sum, d) => sum + d.cpu, 0) / totalDevices)
     : 0;
-  const avgMemory = totalDevices > 0 
-    ? Math.round(devices.reduce((sum, d) => sum + d.memory, 0) / totalDevices) 
+  const avgMemory = totalDevices > 0
+    ? Math.round(devices.reduce((sum, d) => sum + d.memory, 0) / totalDevices)
     : 0;
-  
+
   const deviceTypes: Record<string, number> = {};
   devices.forEach(d => {
     deviceTypes[d.type] = (deviceTypes[d.type] || 0) + 1;
@@ -60,7 +60,7 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
           onClick={() => router.push(path)}
           className="text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded border hover:border-primary"
         >
-          View 
+          View →
         </button>
       </div>
 
@@ -90,7 +90,6 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
         </div>
       </div>
 
-      {/* Device Types */}
       <div>
         <p className="text-[10px] text-muted-foreground mb-1">Device Types</p>
         <div className="flex flex-wrap gap-1">
@@ -121,10 +120,10 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
 
 export default function RegionCards() {
   const devices = useDeviceStore((state) => state.devices);
-  
+
   const regions = {
     culpepper: {
-      title: "Data Center (Culpepper)",
+      title: "Culpepper",
       region: "culpepper",
       color: "bg-green-100 text-green-600",
       icon: <Server className="h-4 w-4" />,
@@ -132,7 +131,7 @@ export default function RegionCards() {
       path: "/culpepper"
     },
     plainsboro: {
-      title: "Data Center (Plainsboro)",
+      title: "Plainsboro",   // no "Data Center"
       region: "plainsboro",
       color: "bg-purple-100 text-purple-600",
       icon: <Database className="h-4 w-4" />,
@@ -149,6 +148,7 @@ export default function RegionCards() {
     }
   };
 
+  // (Optional) you can still show default devices if any
   const defaultDevices = devices.filter(d => d.region === "default");
   const hasDefaultDevices = defaultDevices.length > 0;
 
@@ -160,7 +160,7 @@ export default function RegionCards() {
           {devices.length} total devices
         </span>
       </div>
-      
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Object.values(regions).map((region) => (
           <RegionCard key={region.region} {...region} />
@@ -170,7 +170,7 @@ export default function RegionCards() {
       {hasDefaultDevices && (
         <div className="mt-2 p-3 rounded-lg border border-dashed bg-muted/50">
           <p className="text-xs text-muted-foreground">
-            Legacy devices: {defaultDevices.length} device(s)
+            Unclassified devices: {defaultDevices.length} device(s) – check naming.
           </p>
         </div>
       )}

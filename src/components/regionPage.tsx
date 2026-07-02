@@ -63,12 +63,12 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
   const totalDevices = regionDevices.length;
   const upDevices = regionDevices.filter(d => d.status === "up").length;
   const downDevices = totalDevices - upDevices;
-  
-  const avgCpu = totalDevices > 0 
-    ? Math.round(regionDevices.reduce((sum, d) => sum + d.cpu, 0) / totalDevices) 
+
+  const avgCpu = totalDevices > 0
+    ? Math.round(regionDevices.reduce((sum, d) => sum + d.cpu, 0) / totalDevices)
     : 0;
-  const avgMemory = totalDevices > 0 
-    ? Math.round(regionDevices.reduce((sum, d) => sum + d.memory, 0) / totalDevices) 
+  const avgMemory = totalDevices > 0
+    ? Math.round(regionDevices.reduce((sum, d) => sum + d.memory, 0) / totalDevices)
     : 0;
 
   const deviceTypes: Record<string, number> = {};
@@ -135,7 +135,6 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
         </div>
       </div>
 
-      {/* Device Types */}
       <div className="rounded-lg border bg-card p-4">
         <h3 className="text-sm font-semibold mb-3">Device Types</h3>
         <div className="flex flex-wrap gap-3">

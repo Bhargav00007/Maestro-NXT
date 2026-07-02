@@ -24,23 +24,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-interface ZabbixHost {
-  hostid: string;
-  host: string;
-  name?: string;
-  available?: string;
-  status?: string;
-  error?: string;
-}
-
 export default function ZabbixPage() {
   const router = useRouter();
   const devices = useDeviceStore((state) => state.devices);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Only show Zabbix devices
-  const zabbixDevices = devices.filter((d) => d.region === "zabbix");
+  // Show all devices (they are all from Zabbix)
+  const zabbixDevices = devices;
 
   const getStatusBadge = (status?: string) => {
     if (status === "up" || status === "0") {
@@ -145,8 +135,8 @@ export default function ZabbixPage() {
             <Card
               key={device.id}
               className="cursor-pointer hover:shadow-lg transition-all hover:border-primary/50"
-// In your Zabbix page, when clicking on a device card
-onClick={() => router.push(`/zabbix/details?hostId=${device.zabbixHostId}`)}            >
+              onClick={() => router.push(`/zabbix/details?hostId=${device.zabbixHostId}`)}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className={getDeviceTypeColor(device.type)}>
@@ -156,7 +146,14 @@ onClick={() => router.push(`/zabbix/details?hostId=${device.zabbixHostId}`)}    
                     {device.name}
                   </CardTitle>
                 </div>
-                {getStatusBadge(device.status)}
+                <div className="flex items-center gap-1">
+                  {device.region && device.region !== "default" && (
+                    <Badge variant="outline" className="text-[10px] capitalize">
+                      {device.region}
+                    </Badge>
+                  )}
+                  {getStatusBadge(device.status)}
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between text-sm">

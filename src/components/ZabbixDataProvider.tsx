@@ -29,6 +29,15 @@ interface ZabbixHost {
   }>;
 }
 
+// Helper: determine region from host name (case‑insensitive)
+function getRegionFromName(name: string): string {
+  const upper = name.toUpperCase();
+  if (upper.includes("CUL")) return "culpepper";
+  if (upper.includes("HYD")) return "hyderabad";
+  if (upper.includes("PLB")) return "plainsboro";
+  return "default";
+}
+
 export default function ZabbixDataProvider({
   children,
 }: {
@@ -40,7 +49,6 @@ export default function ZabbixDataProvider({
     try {
       console.log("🔄 Fetching Zabbix data...");
 
-      // Fetch hosts with their items
       const response = await fetch("/api/zabbix?action=hosts");
       const data = await response.json();
 
@@ -48,7 +56,7 @@ export default function ZabbixDataProvider({
         const devices = data.data.map((host: ZabbixHost) => {
           const items = host.items || [];
 
-          // Find CPU utilization
+          // ---- CPU ----
           let cpu = 0;
           let cpuUnits = "%";
           const cpuItem = items.find(
@@ -63,7 +71,7 @@ export default function ZabbixDataProvider({
             console.log(`💻 CPU for ${host.name}: ${cpu}${cpuUnits}`);
           }
 
-          // Find Memory utilization
+          // ---- Memory ----
           let memory = 0;
           let memoryUnits = "%";
           const memItem = items.find(
@@ -78,12 +86,12 @@ export default function ZabbixDataProvider({
             console.log(`🧠 Memory for ${host.name}: ${memory}${memoryUnits}`);
           }
 
-          // Determine host status
+          // ---- Host status ----
           let isUp = true;
           const pingItem = items.find(
             (item) => item.key_ === "icmpping" || item.key_.includes("icmpping")
           );
-          
+
           if (host.available === "1") {
             isUp = false;
           } else if (host.available === "2") {
@@ -106,7 +114,7 @@ export default function ZabbixDataProvider({
 
           console.log(`📡 Host ${host.name}: available=${host.available}, isUp=${isUp}`);
 
-          // Find traffic values
+          // ---- Traffic (example) ----
           let trafficIn = 0;
           let trafficOut = 0;
           const netInItem = items.find(
@@ -115,7 +123,6 @@ export default function ZabbixDataProvider({
           const netOutItem = items.find(
             (item) => item.key_.includes("net.if.out") && item.key_.includes("ens160")
           );
-          
           if (netInItem && netInItem.lastvalue) {
             trafficIn = Math.round(parseFloat(netInItem.lastvalue) / 1000000);
           }
@@ -123,7 +130,7 @@ export default function ZabbixDataProvider({
             trafficOut = Math.round(parseFloat(netOutItem.lastvalue) / 1000000);
           }
 
-          // Determine device type
+          // ---- Device type ----
           let type = "server";
           const name = (host.name || host.host).toLowerCase();
           if (name.includes("router") || name.includes("rtr")) type = "router";
@@ -134,7 +141,10 @@ export default function ZabbixDataProvider({
           else if (name.includes("database") || name.includes("db")) type = "database";
           else if (name.includes("mpls")) type = "router";
 
-          // Get IP from interfaces
+          // ---- Region from host name ----
+          const region = getRegionFromName(host.name || host.host);
+
+          // ---- IP ----
           let ip = host.host;
           if (host.interfaces && host.interfaces.length > 0) {
             ip = host.interfaces[0].ip || host.host;
@@ -145,7 +155,7 @@ export default function ZabbixDataProvider({
             name: host.name || host.host,
             ip: ip,
             type: type,
-            region: "zabbix",
+            region: region,                     // 👈 assigned here
             cpu: isUp ? cpu : 0,
             memory: isUp ? memory : 0,
             status: isUp ? "up" : "down",
@@ -158,18 +168,18 @@ export default function ZabbixDataProvider({
           };
         });
 
-        // Update the store with Zabbix devices
+        // Update the store
         setDevices(devices);
 
-        const upCount = devices.filter((d: { status: string; }) => d.status === "up").length;
-        const downCount = devices.filter((d: { status: string; }) => d.status === "down").length;
+        const upCount = devices.filter((d: { status: string }) => d.status === "up").length;
+        const downCount = devices.filter((d: { status: string }) => d.status === "down").length;
         console.log(
           `✅ Loaded ${devices.length} devices from Zabbix (${upCount} UP, ${downCount} DOWN)`
         );
 
-        devices.forEach((d: { name: any; cpu: any; cpuUnits: any; memory: any; memoryUnits: any; status: any; }) => {
+        devices.forEach((d: any) => {
           console.log(
-            `📊 ${d.name}: CPU=${d.cpu}${d.cpuUnits}, Memory=${d.memory}${d.memoryUnits}, Status=${d.status}`
+            `📊 ${d.name} (${d.region}): CPU=${d.cpu}${d.cpuUnits}, Memory=${d.memory}${d.memoryUnits}, Status=${d.status}`
           );
         });
       } else {

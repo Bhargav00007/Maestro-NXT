@@ -7,9 +7,9 @@ export default function CulpepperPage() {
     <RegionLayout>
       <RegionPage
         region="culpepper"
-        title="Data Center (Culpepper)"
+        title="Culpepper"
         icon={<Server className="h-6 w-6" />}
-        color="bg-blue-100 text-blue-600"
+        color="bg-green-100 text-green-600"
       />
     </RegionLayout>
   );
