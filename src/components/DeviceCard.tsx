@@ -131,7 +131,7 @@ export default function DeviceCard({ device, history }: DeviceCardProps) {
               size="sm"
               className="h-6 w-6 p-0"
               onClick={() =>
-                router.push(`/zabbix?hostId=${device.zabbixHostId}`)
+                router.push(`/zabbix/details?hostId=${device.zabbixHostId}`)
               }
               title="View in Zabbix"
             >

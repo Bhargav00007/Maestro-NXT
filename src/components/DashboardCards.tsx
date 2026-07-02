@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useDeviceStore } from "@/lib/store";
 import DeviceCard from "@/components/DeviceCard";
+import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
 
 interface HistoryItem {
   timestamp: string;
@@ -15,6 +17,8 @@ interface HistoryItem {
 export default function DashboardCards() {
   const devices = useDeviceStore((state) => state.devices);
   const [history, setHistory] = useState<Record<string, HistoryItem[]>>({});
+  const [visibleCount, setVisibleCount] = useState(6);
+  const PAGE_SIZE = 6;
 
   useEffect(() => {
     setHistory((prev) => {
@@ -38,8 +42,16 @@ export default function DashboardCards() {
     });
   }, [devices]);
 
-  // 👇 Show all devices (remove region filter)
+  // All devices (no region filter)
   const allDevices = devices;
+
+  // Paginated devices
+  const visibleDevices = allDevices.slice(0, visibleCount);
+  const hasMore = visibleCount < allDevices.length;
+
+  const loadMore = () => {
+    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, allDevices.length));
+  };
 
   if (devices.length === 0) {
     return (
@@ -59,6 +71,11 @@ export default function DashboardCards() {
           <h2 className="text-lg font-semibold sm:text-2xl">Device Health</h2>
           <p className="text-xs text-muted-foreground">
             {allDevices.length} devices • {upCount} online • {downCount} offline
+            {allDevices.length > PAGE_SIZE && (
+              <span className="ml-2 text-muted-foreground/60">
+                (showing {visibleDevices.length})
+              </span>
+            )}
           </p>
         </div>
         <span className="text-xs text-muted-foreground sm:text-sm">
@@ -67,7 +84,7 @@ export default function DashboardCards() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-        {allDevices.map((device) => (
+        {visibleDevices.map((device) => (
           <DeviceCard
             key={device.id}
             device={device}
@@ -75,6 +92,20 @@ export default function DashboardCards() {
           />
         ))}
       </div>
+
+      {hasMore && (
+        <div className="flex justify-center pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadMore}
+            className="flex items-center gap-2"
+          >
+            <ChevronDown className="h-4 w-4" />
+            Load More ({Math.min(PAGE_SIZE, allDevices.length - visibleCount)} remaining)
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
