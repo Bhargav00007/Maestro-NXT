@@ -143,7 +143,6 @@ export default function ZabbixDeviceDetailPage() {
   const resetFallbackTimer = () => {
     if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
     fallbackTimerRef.current = setTimeout(() => {
-      console.log("⏰ No Pusher update for 10s – fetching latest...");
       fetchLatestData();
     }, 10000);
   };
@@ -170,7 +169,6 @@ export default function ZabbixDeviceDetailPage() {
     finally { resetFallbackTimer(); }
   };
 
-  // Helper: find item by array of possible keys
   const findItemByKey = (items: any[], keys: string[]) => {
     for (const key of keys) {
       const found = items.find((item: any) => item.key_ === key || item.key_.includes(key));
@@ -210,7 +208,6 @@ export default function ZabbixDeviceDetailPage() {
         setLastUpdate(new Date());
       }
     } catch (err) {
-      console.error("❌ Error fetching device data:", err);
       setError("Failed to load device data");
     } finally {
       setIsRefreshing(false);
@@ -271,7 +268,6 @@ export default function ZabbixDeviceDetailPage() {
       setHistory(trimmed);
       historyRef.current = trimmed;
     } catch (err) {
-      console.error("❌ Error fetching recent history:", err);
     }
   };
 
@@ -291,11 +287,9 @@ export default function ZabbixDeviceDetailPage() {
 
     // Spike protection: if new value is 0 but previous was > 0, keep previous
     if (newCpu === 0 && newDevice.cpu > 0) {
-      console.warn(`⚠️ CPU spike to 0 – keeping ${newDevice.cpu}`);
       newCpu = newDevice.cpu;
     }
     if (newMem === 0 && newDevice.memory > 0) {
-      console.warn(`⚠️ Memory spike to 0 – keeping ${newDevice.memory}`);
       newMem = newDevice.memory;
     }
 
