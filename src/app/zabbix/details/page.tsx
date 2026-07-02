@@ -34,6 +34,10 @@ import {
   RefreshCw,
   Zap,
   Gauge,
+  Terminal,
+  Copy,
+  Check,
+  X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +91,13 @@ export default function ZabbixDeviceDetailPage() {
   const historyRef = useRef<HistoryItem[]>([]);
   const deviceRef = useRef<DeviceDetail | null>(null);
   const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Ping modal state
+  const [pingModalOpen, setPingModalOpen] = useState(false);
+  const [pingLoading, setPingLoading] = useState(false);
+  const [pingResult, setPingResult] = useState<string>("");
+  const [pingError, setPingError] = useState<string | null>(null);
+  const [pingCopied, setPingCopied] = useState(false);
 
   useEffect(() => {
     deviceRef.current = device;
@@ -154,24 +165,39 @@ export default function ZabbixDeviceDetailPage() {
       const res = await fetch(`/api/zabbix?action=items&hostId=${hostId}`);
       const data = await res.json();
       if (data.success && data.data) {
-        const cpuItem = findItemByKey(data.data, ["system.cpu.util", "cpu.utilization"]);
-        const memItem = findItemByKey(data.data, ["vm.memory.util", "memory.utilization"]);
+        const cpuItem = findItemByKey(data.data, [
+          "system.cpu.util",
+          "cpu.utilization",
+        ]);
+        const memItem = findItemByKey(data.data, [
+          "vm.memory.util",
+          "memory.utilization",
+        ]);
         if (cpuItem?.lastvalue && memItem?.lastvalue) {
           const cpuVal = Math.round(parseFloat(cpuItem.lastvalue));
           const memVal = Math.round(parseFloat(memItem.lastvalue));
           if (!isNaN(cpuVal) && !isNaN(memVal)) {
-            updateDeviceData({ cpu: cpuVal, memory: memVal, timestamp: new Date().toISOString() });
+            updateDeviceData({
+              cpu: cpuVal,
+              memory: memVal,
+              timestamp: new Date().toISOString(),
+            });
             setLastUpdate(new Date());
           }
         }
       }
-    } catch (err) { console.error("Fallback fetch failed:", err); }
-    finally { resetFallbackTimer(); }
+    } catch (err) {
+      console.error("Fallback fetch failed:", err);
+    } finally {
+      resetFallbackTimer();
+    }
   };
 
   const findItemByKey = (items: any[], keys: string[]) => {
     for (const key of keys) {
-      const found = items.find((item: any) => item.key_ === key || item.key_.includes(key));
+      const found = items.find(
+        (item: any) => item.key_ === key || item.key_.includes(key)
+      );
       if (found) return found;
     }
     return null;
@@ -186,8 +212,14 @@ export default function ZabbixDeviceDetailPage() {
       const data = await res.json();
       if (data.success && data.data) {
         setItems(data.data);
-        const cpuItem = findItemByKey(data.data, ["system.cpu.util", "cpu.utilization"]);
-        const memItem = findItemByKey(data.data, ["vm.memory.util", "memory.utilization"]);
+        const cpuItem = findItemByKey(data.data, [
+          "system.cpu.util",
+          "cpu.utilization",
+        ]);
+        const memItem = findItemByKey(data.data, [
+          "vm.memory.util",
+          "memory.utilization",
+        ]);
 
         // Update device stats
         let updatedDevice = deviceRef.current;
@@ -219,7 +251,9 @@ export default function ZabbixDeviceDetailPage() {
       const historyData: HistoryItem[] = [];
 
       if (cpuItem) {
-        const cpuRes = await fetch(`/api/zabbix?action=history&itemId=${cpuItem.itemid}&limit=${limit}`);
+        const cpuRes = await fetch(
+          `/api/zabbix?action=history&itemId=${cpuItem.itemid}&limit=${limit}`
+        );
         const cpuData = await cpuRes.json();
         if (cpuData.success && cpuData.data) {
           cpuData.data.forEach((item: any) => {
@@ -234,7 +268,9 @@ export default function ZabbixDeviceDetailPage() {
       }
 
       if (memItem) {
-        const memRes = await fetch(`/api/zabbix?action=history&itemId=${memItem.itemid}&limit=${limit}`);
+        const memRes = await fetch(
+          `/api/zabbix?action=history&itemId=${memItem.itemid}&limit=${limit}`
+        );
         const memData = await memRes.json();
         if (memData.success && memData.data) {
           memData.data.forEach((item: any) => {
@@ -254,20 +290,22 @@ export default function ZabbixDeviceDetailPage() {
       }
 
       // Sort by time
-      historyData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      historyData.sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
 
-      // 🔥 FILTER: Remove points where both cpu and memory are 0 (or NaN)
-      const filtered = historyData.filter(p => {
+      // Filter out points where both cpu and memory are 0
+      const filtered = historyData.filter((p) => {
         const cpuValid = !isNaN(p.cpu) && p.cpu > 0;
         const memValid = !isNaN(p.memory) && p.memory > 0;
         return cpuValid || memValid;
       });
 
-      // Keep only last `limit` points after filtering
       const trimmed = filtered.slice(-limit);
       setHistory(trimmed);
       historyRef.current = trimmed;
     } catch (err) {
+      // ignore
     }
   };
 
@@ -278,14 +316,14 @@ export default function ZabbixDeviceDetailPage() {
     let newCpu = newDevice.cpu;
     let newMem = newDevice.memory;
 
-    if (typeof updatedDevice.cpu === 'number' && !isNaN(updatedDevice.cpu)) {
+    if (typeof updatedDevice.cpu === "number" && !isNaN(updatedDevice.cpu)) {
       newCpu = updatedDevice.cpu;
     }
-    if (typeof updatedDevice.memory === 'number' && !isNaN(updatedDevice.memory)) {
+    if (typeof updatedDevice.memory === "number" && !isNaN(updatedDevice.memory)) {
       newMem = updatedDevice.memory;
     }
 
-    // Spike protection: if new value is 0 but previous was > 0, keep previous
+    // Spike protection
     if (newCpu === 0 && newDevice.cpu > 0) {
       newCpu = newDevice.cpu;
     }
@@ -296,13 +334,15 @@ export default function ZabbixDeviceDetailPage() {
     newDevice.cpu = newCpu;
     newDevice.memory = newMem;
     if (updatedDevice.status) newDevice.status = updatedDevice.status;
-    if (updatedDevice.trafficIn !== undefined) newDevice.trafficIn = updatedDevice.trafficIn;
-    if (updatedDevice.trafficOut !== undefined) newDevice.trafficOut = updatedDevice.trafficOut;
+    if (updatedDevice.trafficIn !== undefined)
+      newDevice.trafficIn = updatedDevice.trafficIn;
+    if (updatedDevice.trafficOut !== undefined)
+      newDevice.trafficOut = updatedDevice.trafficOut;
     if (updatedDevice.timestamp) newDevice.timestamp = updatedDevice.timestamp;
     else newDevice.timestamp = new Date().toISOString();
     setDevice(newDevice);
 
-    // Add new point (if at least one metric >0, otherwise skip)
+    // Add new point
     if (newCpu > 0 || newMem > 0) {
       const now = new Date();
       let ts = now.toISOString();
@@ -321,15 +361,54 @@ export default function ZabbixDeviceDetailPage() {
     }
   };
 
+  // ---- Ping handler ----
+  const handlePing = async () => {
+    if (!device) return;
+    setPingModalOpen(true);
+    setPingLoading(true);
+    setPingResult("");
+    setPingError(null);
+    setPingCopied(false);
+
+    try {
+      const res = await fetch(`/api/ping?host=${encodeURIComponent(device.ip)}`);
+      const data = await res.json();
+      if (res.ok) {
+        setPingResult(data.output || "No output");
+      } else {
+        setPingError(data.error || "Ping failed");
+        setPingResult(data.output || "");
+      }
+    } catch (err: any) {
+      setPingError(err.message || "Network error");
+    } finally {
+      setPingLoading(false);
+    }
+  };
+
+  const copyPingResult = async () => {
+    const text = pingResult || pingError || "";
+    await navigator.clipboard.writeText(text);
+    setPingCopied(true);
+    setTimeout(() => setPingCopied(false), 2000);
+  };
+
+  // ---- Format helpers ----
   const formatTime = (ts: string) => {
-    try { return new Date(ts).toLocaleTimeString(); } catch { return ts; }
+    try {
+      return new Date(ts).toLocaleTimeString();
+    } catch {
+      return ts;
+    }
   };
 
   const getStatusBadge = () => {
     if (!device) return null;
     const isUp = device.status === "up";
     return (
-      <Badge className={isUp ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}>
+      <Badge
+        className={isUp ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}
+      >
         {isUp ? <Wifi className="h-3 w-3 mr-1" /> : <WifiOff className="h-3 w-3 mr-1" />}
         {isUp ? "Online" : "Offline"}
       </Badge>
@@ -339,12 +418,18 @@ export default function ZabbixDeviceDetailPage() {
   const getDeviceIcon = () => {
     if (!device) return <Box className="h-8 w-8" />;
     switch (device.type) {
-      case "router": return <Router className="h-8 w-8" />;
-      case "switch": return <Server className="h-8 w-8" />;
-      case "firewall": return <Shield className="h-8 w-8" />;
-      case "database": return <Database className="h-8 w-8" />;
-      case "storage": return <HardDrive className="h-8 w-8" />;
-      default: return <Box className="h-8 w-8" />;
+      case "router":
+        return <Router className="h-8 w-8" />;
+      case "switch":
+        return <Server className="h-8 w-8" />;
+      case "firewall":
+        return <Shield className="h-8 w-8" />;
+      case "database":
+        return <Database className="h-8 w-8" />;
+      case "storage":
+        return <HardDrive className="h-8 w-8" />;
+      default:
+        return <Box className="h-8 w-8" />;
     }
   };
 
@@ -363,7 +448,9 @@ export default function ZabbixDeviceDetailPage() {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-red-500">Error Loading Device</h3>
           <p className="text-muted-foreground mt-2">{error}</p>
-          <Button onClick={() => router.push("/zabbix")} className="mt-4">Back</Button>
+          <Button onClick={() => router.push("/zabbix")} className="mt-4">
+            Back
+          </Button>
         </div>
       </div>
     );
@@ -374,7 +461,9 @@ export default function ZabbixDeviceDetailPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <p className="text-muted-foreground">Device not found</p>
-          <Button onClick={() => router.push("/zabbix")} className="mt-4">Back</Button>
+          <Button onClick={() => router.push("/zabbix")} className="mt-4">
+            Back
+          </Button>
         </div>
       </div>
     );
@@ -388,7 +477,12 @@ export default function ZabbixDeviceDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.push("/zabbix")} className="h-8 w-8 p-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/zabbix")}
+            className="h-8 w-8 p-0"
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-3">
@@ -398,9 +492,13 @@ export default function ZabbixDeviceDetailPage() {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>{device.ip}</span>
                 <span>•</span>
-                <Badge variant="outline" className="text-xs">{device.type}</Badge>
+                <Badge variant="outline" className="text-xs">
+                  {device.type}
+                </Badge>
                 <span>•</span>
-                <Badge className="text-xs bg-blue-50 text-blue-700 border-blue-200">Zabbix</Badge>
+                <Badge className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                  Zabbix
+                </Badge>
                 <span>•</span>
                 <Badge className="text-xs bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
                   <Zap className="h-2 w-2" /> Live
@@ -411,8 +509,24 @@ export default function ZabbixDeviceDetailPage() {
         </div>
         <div className="flex items-center gap-3">
           {getStatusBadge()}
-          <Button variant="outline" size="sm" onClick={fetchDeviceData} disabled={isRefreshing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePing}
+            className="flex items-center gap-1"
+          >
+            <Terminal className="h-4 w-4" />
+            Ping
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchDeviceData}
+            disabled={isRefreshing}
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
           <span className="text-xs text-muted-foreground">
@@ -428,8 +542,17 @@ export default function ZabbixDeviceDetailPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">CPU Usage</p>
-                <p className={`text-2xl font-bold ${getMetricStatus(device.cpu, "cpu") === "critical" ? "text-red-500" : getMetricStatus(device.cpu, "cpu") === "warning" ? "text-yellow-500" : "text-green-500"}`}>
-                  {device.cpu}{device.cpuUnits || "%"}
+                <p
+                  className={`text-2xl font-bold ${
+                    getMetricStatus(device.cpu, "cpu") === "critical"
+                      ? "text-red-500"
+                      : getMetricStatus(device.cpu, "cpu") === "warning"
+                      ? "text-yellow-500"
+                      : "text-green-500"
+                  }`}
+                >
+                  {device.cpu}
+                  {device.cpuUnits || "%"}
                 </p>
               </div>
               <Cpu className="h-8 w-8 text-muted-foreground" />
@@ -441,8 +564,17 @@ export default function ZabbixDeviceDetailPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Memory Usage</p>
-                <p className={`text-2xl font-bold ${getMetricStatus(device.memory, "memory") === "critical" ? "text-red-500" : getMetricStatus(device.memory, "memory") === "warning" ? "text-yellow-500" : "text-green-500"}`}>
-                  {device.memory}{device.memoryUnits || "%"}
+                <p
+                  className={`text-2xl font-bold ${
+                    getMetricStatus(device.memory, "memory") === "critical"
+                      ? "text-red-500"
+                      : getMetricStatus(device.memory, "memory") === "warning"
+                      ? "text-yellow-500"
+                      : "text-green-500"
+                  }`}
+                >
+                  {device.memory}
+                  {device.memoryUnits || "%"}
                 </p>
               </div>
               <MemoryStick className="h-8 w-8 text-muted-foreground" />
@@ -476,10 +608,24 @@ export default function ZabbixDeviceDetailPage() {
       {/* Tabs */}
       <div className="border rounded-lg overflow-hidden">
         <div className="flex border-b bg-muted/50">
-          <button className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === "overview" ? "bg-background text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setActiveTab("overview")}>
+          <button
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "overview"
+                ? "bg-background text-foreground border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("overview")}
+          >
             <Activity className="inline h-4 w-4 mr-2" /> Overview
           </button>
-          <button className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === "metrics" ? "bg-background text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setActiveTab("metrics")}>
+          <button
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "metrics"
+                ? "bg-background text-foreground border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("metrics")}
+          >
             <Gauge className="inline h-4 w-4 mr-2" /> Metrics
           </button>
         </div>
@@ -488,7 +634,8 @@ export default function ZabbixDeviceDetailPage() {
           <div className="p-4 space-y-4">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              Real‑time updates via WebSocket {isConnected ? "✅ Connected" : "⏳ Connecting..."}
+              Real‑time updates via WebSocket{" "}
+              {isConnected ? "✅ Connected" : "⏳ Connecting..."}
             </div>
 
             {/* Combined Chart */}
@@ -504,22 +651,76 @@ export default function ZabbixDeviceDetailPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={history}>
                         <defs>
-                          <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          <linearGradient
+                            id="cpuGradient"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="#3b82f6"
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="#3b82f6"
+                              stopOpacity={0}
+                            />
                           </linearGradient>
-                          <linearGradient id="memoryGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                          <linearGradient
+                            id="memoryGradient"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="#10b981"
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="#10b981"
+                              stopOpacity={0}
+                            />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="timestamp" tickFormatter={formatTime} tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                        <XAxis
+                          dataKey="timestamp"
+                          tickFormatter={formatTime}
+                          tick={{ fontSize: 10 }}
+                          interval="preserveStartEnd"
+                        />
                         <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                        <Tooltip labelFormatter={(ts) => new Date(ts as string).toLocaleString()} contentStyle={{ fontSize: 12 }} />
+                        <Tooltip
+                          labelFormatter={(ts) =>
+                            new Date(ts as string).toLocaleString()
+                          }
+                          contentStyle={{ fontSize: 12 }}
+                        />
                         <Legend />
-                        <Area type="monotone" dataKey="cpu" stroke="#3b82f6" fill="url(#cpuGradient)" strokeWidth={2} dot={false} name="CPU" />
-                        <Area type="monotone" dataKey="memory" stroke="#10b981" fill="url(#memoryGradient)" strokeWidth={2} dot={false} name="Memory" />
+                        <Area
+                          type="monotone"
+                          dataKey="cpu"
+                          stroke="#3b82f6"
+                          fill="url(#cpuGradient)"
+                          strokeWidth={2}
+                          dot={false}
+                          name="CPU"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="memory"
+                          stroke="#10b981"
+                          fill="url(#memoryGradient)"
+                          strokeWidth={2}
+                          dot={false}
+                          name="Memory"
+                        />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -546,10 +747,25 @@ export default function ZabbixDeviceDetailPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={history}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="timestamp" tickFormatter={formatTime} tick={{ fontSize: 10 }} />
+                      <XAxis
+                        dataKey="timestamp"
+                        tickFormatter={formatTime}
+                        tick={{ fontSize: 10 }}
+                      />
                       <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                      <Tooltip labelFormatter={(ts) => new Date(ts as string).toLocaleString()} formatter={(value: any) => [`${value}%`, "CPU"]} />
-                      <Line type="monotone" dataKey="cpu" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                      <Tooltip
+                        labelFormatter={(ts) =>
+                          new Date(ts as string).toLocaleString()
+                        }
+                        formatter={(value: any) => [`${value}%`, "CPU"]}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="cpu"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        dot={false}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -568,10 +784,25 @@ export default function ZabbixDeviceDetailPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={history}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="timestamp" tickFormatter={formatTime} tick={{ fontSize: 10 }} />
+                      <XAxis
+                        dataKey="timestamp"
+                        tickFormatter={formatTime}
+                        tick={{ fontSize: 10 }}
+                      />
                       <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                      <Tooltip labelFormatter={(ts) => new Date(ts as string).toLocaleString()} formatter={(value: any) => [`${value}%`, "Memory"]} />
-                      <Line type="monotone" dataKey="memory" stroke="#10b981" strokeWidth={2} dot={false} />
+                      <Tooltip
+                        labelFormatter={(ts) =>
+                          new Date(ts as string).toLocaleString()
+                        }
+                        formatter={(value: any) => [`${value}%`, "Memory"]}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="memory"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        dot={false}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -584,39 +815,102 @@ export default function ZabbixDeviceDetailPage() {
           <div className="p-4 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Card>
-                <CardHeader><CardTitle className="text-sm">CPU</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="text-sm">CPU</CardTitle>
+                </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <span className={`text-3xl font-bold ${getMetricStatus(device.cpu, "cpu") === "critical" ? "text-red-500" : getMetricStatus(device.cpu, "cpu") === "warning" ? "text-yellow-500" : "text-green-500"}`}>{device.cpu}%</span>
+                    <span
+                      className={`text-3xl font-bold ${
+                        getMetricStatus(device.cpu, "cpu") === "critical"
+                          ? "text-red-500"
+                          : getMetricStatus(device.cpu, "cpu") === "warning"
+                          ? "text-yellow-500"
+                          : "text-green-500"
+                      }`}
+                    >
+                      {device.cpu}%
+                    </span>
                     <Cpu className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
-                    <div className={`h-2 rounded-full ${device.cpu > 80 ? "bg-red-500" : device.cpu > 60 ? "bg-yellow-500" : "bg-green-500"}`} style={{ width: `${device.cpu}%` }} />
+                    <div
+                      className={`h-2 rounded-full ${
+                        device.cpu > 80
+                          ? "bg-red-500"
+                          : device.cpu > 60
+                          ? "bg-yellow-500"
+                          : "bg-green-500"
+                      }`}
+                      style={{ width: `${device.cpu}%` }}
+                    />
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">{device.cpu > 80 ? "⚠️ High" : device.cpu > 60 ? "⚡ Moderate" : "✅ Normal"}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {device.cpu > 80
+                      ? "⚠️ High"
+                      : device.cpu > 60
+                      ? "⚡ Moderate"
+                      : "✅ Normal"}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader><CardTitle className="text-sm">Memory</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="text-sm">Memory</CardTitle>
+                </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <span className={`text-3xl font-bold ${getMetricStatus(device.memory, "memory") === "critical" ? "text-red-500" : getMetricStatus(device.memory, "memory") === "warning" ? "text-yellow-500" : "text-green-500"}`}>{device.memory}%</span>
+                    <span
+                      className={`text-3xl font-bold ${
+                        getMetricStatus(device.memory, "memory") === "critical"
+                          ? "text-red-500"
+                          : getMetricStatus(device.memory, "memory") === "warning"
+                          ? "text-yellow-500"
+                          : "text-green-500"
+                      }`}
+                    >
+                      {device.memory}%
+                    </span>
                     <MemoryStick className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
-                    <div className={`h-2 rounded-full ${device.memory > 85 ? "bg-red-500" : device.memory > 70 ? "bg-yellow-500" : "bg-green-500"}`} style={{ width: `${device.memory}%` }} />
+                    <div
+                      className={`h-2 rounded-full ${
+                        device.memory > 85
+                          ? "bg-red-500"
+                          : device.memory > 70
+                          ? "bg-yellow-500"
+                          : "bg-green-500"
+                      }`}
+                      style={{ width: `${device.memory}%` }}
+                    />
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">{device.memory > 85 ? "⚠️ High" : device.memory > 70 ? "⚡ Moderate" : "✅ Normal"}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {device.memory > 85
+                      ? "⚠️ High"
+                      : device.memory > 70
+                      ? "⚡ Moderate"
+                      : "✅ Normal"}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader><CardTitle className="text-sm">Status</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="text-sm">Status</CardTitle>
+                </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-3">
-                    <span className={`inline-block h-3 w-3 rounded-full ${statusBadgeColor}`} />
-                    <span className="text-lg font-medium">{device.status === "up" ? "Online" : "Offline"}</span>
+                    <span
+                      className={`inline-block h-3 w-3 rounded-full ${statusBadgeColor}`}
+                    />
+                    <span className="text-lg font-medium">
+                      {device.status === "up" ? "Online" : "Offline"}
+                    </span>
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">Last updated: {new Date(device.timestamp).toLocaleString()}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Last updated:{" "}
+                    {new Date(device.timestamp).toLocaleString()}
+                  </p>
                   <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
                     <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                     Live WebSocket {isConnected ? "connected" : "connecting"}
@@ -626,17 +920,27 @@ export default function ZabbixDeviceDetailPage() {
             </div>
 
             <Card>
-              <CardHeader><CardTitle className="text-sm">Network Traffic</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-sm">Network Traffic</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><p className="text-sm text-muted-foreground">Inbound</p><p className="text-2xl font-bold">{device.trafficIn} Mbps</p></div>
-                  <div><p className="text-sm text-muted-foreground">Outbound</p><p className="text-2xl font-bold">{device.trafficOut} Mbps</p></div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Inbound</p>
+                    <p className="text-2xl font-bold">{device.trafficIn} Mbps</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Outbound</p>
+                    <p className="text-2xl font-bold">{device.trafficOut} Mbps</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className="text-sm">Items ({items.length})</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-sm">Items ({items.length})</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="max-h-[300px] overflow-y-auto">
                   <table className="w-full text-sm">
@@ -652,9 +956,15 @@ export default function ZabbixDeviceDetailPage() {
                       {items.slice(0, 20).map((item) => (
                         <tr key={item.itemid} className="border-b hover:bg-muted/30">
                           <td className="p-2 text-xs">{item.name}</td>
-                          <td className="p-2 text-xs text-muted-foreground">{item.key_}</td>
-                          <td className="p-2 text-right font-mono text-xs">{item.lastvalue || "N/A"}</td>
-                          <td className="p-2 text-right text-xs text-muted-foreground">{item.units || ""}</td>
+                          <td className="p-2 text-xs text-muted-foreground">
+                            {item.key_}
+                          </td>
+                          <td className="p-2 text-right font-mono text-xs">
+                            {item.lastvalue || "N/A"}
+                          </td>
+                          <td className="p-2 text-right text-xs text-muted-foreground">
+                            {item.units || ""}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -665,6 +975,73 @@ export default function ZabbixDeviceDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Ping Modal */}
+      {pingModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setPingModalOpen(false)}
+        >
+          <div
+            className="bg-background rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Terminal className="h-5 w-5" />
+                Ping Result for {device.ip}
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPingModalOpen(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex-1 overflow-auto p-4">
+              {pingLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                  <span className="ml-2">Pinging...</span>
+                </div>
+              ) : (
+                <pre className="bg-muted/30 p-4 rounded-md text-sm font-mono whitespace-pre-wrap break-words max-h-60 overflow-auto">
+                  {pingResult || pingError || "No output"}
+                </pre>
+              )}
+              {pingError && !pingLoading && (
+                <p className="text-red-500 text-sm mt-2">Error: {pingError}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 p-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyPingResult}
+                disabled={pingLoading || (!pingResult && !pingError)}
+                className="flex items-center gap-1"
+              >
+                {pingCopied ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+                {pingCopied ? "Copied" : "Copy"}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setPingModalOpen(false)}
+              >
+                OK
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
