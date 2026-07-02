@@ -26,6 +26,7 @@ import {
   Settings,
   Menu,
   Bug,
+  AlertTriangle,
 } from "lucide-react";
 
 interface MySidebarProps {
@@ -62,6 +63,11 @@ const items = [
     title: "Zabbix",
     url: "/zabbix",
     icon: Bug,
+  },
+  {
+    title: "Alerts",
+    url: "/alerts",
+    icon: AlertTriangle,
   },
 ];
 

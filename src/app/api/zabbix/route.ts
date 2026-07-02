@@ -1,3 +1,4 @@
+// app/api/zabbix/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 const ZABBIX_URL = process.env.NEXT_PUBLIC_ZABBIX_URL || "http://172.24.192.57/zabbix";
@@ -126,9 +127,8 @@ export async function GET(request: NextRequest) {
           );
         }
 
-        // Try different history types
         let historyData = null;
-        const historyTypes = [0, 3]; // 0 = float, 3 = integer
+        const historyTypes = [0, 3];
 
         for (const type of historyTypes) {
           try {
@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
               break;
             }
           } catch (e) {
-            // Try next type
+            // try next type
           }
         }
 
@@ -168,6 +168,58 @@ export async function GET(request: NextRequest) {
         }
 
         result = historyData;
+        break;
+      }
+
+      case "triggers": {
+        const params: any = {
+          output: [
+            "triggerid",
+            "description",
+            "priority",
+            "status",
+            "value",
+            "lastchange",
+          ],
+          selectHosts: ["hostid", "host", "name"],
+          selectItems: ["itemid", "name", "key_"],
+          filter: { status: 0 },
+          sortfield: "priority",
+          sortorder: "DESC",
+          limit: 50,
+        };
+        if (hostId) {
+          params.hostids = hostId;
+        }
+        result = await zabbixRequest("trigger.get", params, token);
+        break;
+      }
+
+      // ✅ NEW: Fetch historical events
+      case "events": {
+        const params: any = {
+          output: [
+            "eventid",
+            "source",
+            "object",
+            "objectid",
+            "clock",
+            "value",
+            "acknowledged",
+            "ns",
+          ],
+          selectHosts: ["hostid", "host", "name"],
+          selectTriggers: ["triggerid", "description", "priority", "status"],
+          sortfield: "clock",
+          sortorder: "DESC",
+          limit: limit,
+        };
+        if (hostId) {
+          params.hostids = hostId;
+        }
+        // Optionally filter only trigger events (source=0)
+        params.filter = { source: 0 };
+        result = await zabbixRequest("event.get", params, token);
         break;
       }
 
