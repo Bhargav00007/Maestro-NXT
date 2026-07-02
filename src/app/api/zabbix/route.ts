@@ -1,157 +1,196 @@
-// app/api/zabbix/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getZabbixAPI } from "@/lib/zabbix";
+
+const ZABBIX_URL = process.env.NEXT_PUBLIC_ZABBIX_URL || "http://172.24.192.57/zabbix";
+const API_URL = `${ZABBIX_URL}/api_jsonrpc.php`;
+const USER = process.env.ZABBIX_USER || "Admin";
+const PASSWORD = process.env.ZABBIX_PASSWORD || "zabbix";
+
+async function zabbixRequest(method: string, params: any = {}, token?: string) {
+  const body: any = {
+    jsonrpc: "2.0",
+    method,
+    params,
+    id: Date.now(),
+  };
+
+  if (token) {
+    body.auth = token;
+  }
+
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json-rpc",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json();
+
+  if (data.error) {
+    throw new Error(`${data.error.message} (Code: ${data.error.code})`);
+  }
+
+  return data.result;
+}
+
+async function getAuthToken() {
+  try {
+    const result = await zabbixRequest("user.login", {
+      username: USER,
+      password: PASSWORD,
+    });
+    return result;
+  } catch (error) {
+    console.error("Failed to get auth token:", error);
+    throw error;
+  }
+}
 
 export async function GET(request: NextRequest) {
-  const startTime = Date.now();
-  
   try {
     const searchParams = request.nextUrl.searchParams;
     const action = searchParams.get("action") || "hosts";
     const hostId = searchParams.get("hostId");
+    const itemId = searchParams.get("itemId");
+    const graphId = searchParams.get("graphId");
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam ? parseInt(limitParam, 10) : 100;
 
-    console.log(`=== Zabbix API Request ===`);
-    console.log(`Action: ${action}, HostId: ${hostId || 'none'}`);
-
-    const zabbix = getZabbixAPI();
-    
-    // Get credentials from environment
-    const user = process.env.ZABBIX_USER || "Admin";
-    const password = process.env.ZABBIX_PASSWORD || "zabbix";
-
-    console.log(`Using credentials - User: "${user}", Password length: ${password ? password.length : 0}`);
-
-    // Try to login with multiple attempts
-    let authToken;
-    let loginError = null;
-    
-    try {
-      console.log("Attempting Zabbix login...");
-      authToken = await zabbix.login(user, password);
-      console.log("✅ Zabbix login successful!");
-    } catch (error: any) {
-      loginError = error;
-      console.error("❌ Zabbix login failed:", error.message);
-      
-      // Try to get API version for debugging
-      try {
-        console.log("Attempting to get API version...");
-        // We need a new instance for version check since login failed
-        const testZabbix = new (require('@/lib/zabbix').ZabbixAPI)({
-          url: process.env.NEXT_PUBLIC_ZABBIX_URL || "http://172.24.192.57/zabbix",
-          user: user,
-          password: password,
-        });
-        const versionResult = await testZabbix.testConnection();
-        console.log("API Version test result:", versionResult);
-      } catch (versionError) {
-        console.error("Failed to get API version:", versionError);
-      }
-      
-      // Provide helpful error message
-      let errorMessage = "Failed to authenticate with Zabbix. ";
-      let details: any = {
-        user: user,
-        url: process.env.NEXT_PUBLIC_ZABBIX_URL,
-        api_url: `${process.env.NEXT_PUBLIC_ZABBIX_URL}/api_jsonrpc.php`,
-        error: error.message,
-      };
-
-      if (error.message.includes("unexpected parameter")) {
-        errorMessage += "The API parameter format seems incorrect. This might be a version mismatch.";
-        details.suggestion = "Try using the Zabbix API test page to verify the correct parameter format.";
-        details.troubleshooting = [
-          "Check if Zabbix API version is 3.0 or higher",
-          "Try accessing the API directly: " + `${process.env.NEXT_PUBLIC_ZABBIX_URL}/api_jsonrpc.php`,
-          "Verify that the Zabbix frontend is accessible",
-          "Check if any authentication modules are enabled"
-        ];
-      } else if (error.message.includes("Cannot connect")) {
-        errorMessage += "Cannot reach the Zabbix server.";
-        details.suggestion = "Make sure the Zabbix server is running and the URL is correct.";
-      } else {
-        errorMessage += error.message;
-        details.suggestion = "Please check your ZABBIX_USER and ZABBIX_PASSWORD environment variables.";
-      }
-      
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: errorMessage,
-          details: details,
-          timestamp: new Date().toISOString()
-        },
-        { status: 401 }
-      );
-    }
-
+    const token = await getAuthToken();
     let result;
-    let success = true;
 
     switch (action) {
-      case "hosts":
-        console.log("Fetching hosts...");
-        result = await zabbix.getHosts();
-        console.log(`Found ${result?.length || 0} hosts`);
+      case "hosts": {
+        result = await zabbixRequest(
+          "host.get",
+          {
+            output: ["hostid", "host", "name", "status", "available", "error"],
+            selectInterfaces: ["ip", "dns", "port", "type"],
+            selectItems: [
+              "itemid",
+              "name",
+              "key_",
+              "lastvalue",
+              "units",
+              "status",
+              "description",
+            ],
+            selectTriggers: ["triggerid", "description", "priority", "status", "value"],
+            filter: {
+              status: 0,
+            },
+          },
+          token
+        );
         break;
-      
-      case "items":
+      }
+
+      case "items": {
         if (!hostId) {
           return NextResponse.json(
-            { success: false, error: "hostId is required for items action" },
+            { success: false, error: "hostId is required" },
             { status: 400 }
           );
         }
-        console.log(`Fetching items for host: ${hostId}`);
-        result = await zabbix.getItems(hostId);
-        console.log(`Found ${result?.length || 0} items`);
+
+        result = await zabbixRequest(
+          "item.get",
+          {
+            output: [
+              "itemid",
+              "name",
+              "key_",
+              "lastvalue",
+              "units",
+              "status",
+              "description",
+              "type",
+            ],
+            hostids: hostId,
+            filter: {
+              status: 0,
+            },
+            sortfield: "name",
+          },
+          token
+        );
         break;
-      
-      case "history":
-        if (!hostId) {
+      }
+
+      case "history": {
+        if (!itemId) {
           return NextResponse.json(
-            { success: false, error: "hostId is required for history action" },
+            { success: false, error: "itemId is required" },
             { status: 400 }
           );
         }
-        console.log(`Fetching history for item: ${hostId}`);
-        result = await zabbix.getHistory(hostId);
+
+        // Try different history types
+        let historyData = null;
+        const historyTypes = [0, 3]; // 0 = float, 3 = integer
+
+        for (const type of historyTypes) {
+          try {
+            const data = await zabbixRequest(
+              "history.get",
+              {
+                output: "extend",
+                itemids: itemId,
+                limit: limit,
+                sortfield: "clock",
+                sortorder: "DESC",
+                history: type,
+              },
+              token
+            );
+            if (data && data.length > 0) {
+              historyData = data;
+              break;
+            }
+          } catch (e) {
+            // Try next type
+          }
+        }
+
+        if (!historyData) {
+          historyData = await zabbixRequest(
+            "history.get",
+            {
+              output: "extend",
+              itemids: itemId,
+              limit: limit,
+              sortfield: "clock",
+              sortorder: "DESC",
+            },
+            token
+          );
+        }
+
+        result = historyData;
         break;
-      
-      case "triggers":
-        console.log("Fetching triggers...");
-        result = await zabbix.getTriggers(hostId || undefined);
-        console.log(`Found ${result?.length || 0} triggers`);
-        break;
-      
-      case "groups":
-        console.log("Fetching host groups...");
-        result = await zabbix.getHostGroups();
-        console.log(`Found ${result?.length || 0} groups`);
-        break;
-      
-      case "latest":
-        if (!hostId) {
+      }
+
+      case "graph": {
+        if (!graphId) {
           return NextResponse.json(
-            { success: false, error: "hostId is required for latest action" },
+            { success: false, error: "graphId is required" },
             { status: 400 }
           );
         }
-        console.log(`Fetching latest data for host: ${hostId}`);
-        result = await zabbix.getLatestData(hostId);
+
+        result = await zabbixRequest(
+          "graph.get",
+          {
+            output: ["graphid", "name", "width", "height", "graphtype"],
+            graphids: graphId,
+            selectGraphItems: ["itemid", "color", "drawtype", "sortorder"],
+          },
+          token
+        );
         break;
-      
-      case "status":
-        if (!hostId) {
-          return NextResponse.json(
-            { success: false, error: "hostId is required for status action" },
-            { status: 400 }
-          );
-        }
-        console.log(`Fetching status for host: ${hostId}`);
-        result = await zabbix.getHostStatus(hostId);
-        break;
-      
+      }
+
       default:
         return NextResponse.json(
           { success: false, error: `Unknown action: ${action}` },
@@ -159,33 +198,18 @@ export async function GET(request: NextRequest) {
         );
     }
 
-    const duration = Date.now() - startTime;
-    console.log(`✅ Zabbix API request completed in ${duration}ms`);
-
-    return NextResponse.json({ 
-      success, 
+    return NextResponse.json({
+      success: true,
       data: result,
       action,
-      duration,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error: any) {
-    const duration = Date.now() - startTime;
-    console.error("❌ Zabbix API Error:", {
-      message: error.message,
-      stack: error.stack,
-      duration
-    });
-
+    console.error("Zabbix API Error:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message || "Failed to fetch data from Zabbix",
-        details: {
-          duration,
-          timestamp: new Date().toISOString()
-        }
+      {
+        success: false,
+        error: error.message || "Failed to fetch data",
       },
       { status: 500 }
     );

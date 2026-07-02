@@ -2,6 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import {
   LineChart,
   Line,
@@ -11,18 +13,23 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { Eye, Wifi, WifiOff, Activity, Server, Shield, Router, Database, HardDrive, Box } from "lucide-react";
 
 interface Device {
   id: string;
   name: string;
   ip: string;
   type: string;
+  region: string;
   cpu: number;
   memory: number;
   status: "up" | "down";
   trafficIn: number;
   trafficOut: number;
   timestamp: string;
+  zabbixHostId?: string;
+  cpuUnits?: string;
+  memoryUnits?: string;
 }
 
 interface HistoryItem {
@@ -39,26 +46,99 @@ interface DeviceCardProps {
 }
 
 export default function DeviceCard({ device, history }: DeviceCardProps) {
+  const router = useRouter();
   const statusColor = device.status === "up" ? "bg-green-500" : "bg-red-500";
   const statusText = device.status === "up" ? "Online" : "Offline";
 
-  const formatTime = (ts: string) => {
-    const date = new Date(ts);
-    return date.toLocaleTimeString();
+  const formatTime = (timestamp: any): string => {
+    if (!timestamp) return "";
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString();
+    } catch {
+      return String(timestamp);
+    }
+  };
+
+  const getDeviceIcon = () => {
+    switch (device.type) {
+      case "router":
+        return <Router className="h-4 w-4" />;
+      case "switch":
+        return <Server className="h-4 w-4" />;
+      case "firewall":
+        return <Shield className="h-4 w-4" />;
+      case "database":
+        return <Database className="h-4 w-4" />;
+      case "storage":
+        return <HardDrive className="h-4 w-4" />;
+      case "loadbalancer":
+        return <Activity className="h-4 w-4" />;
+      default:
+        return <Box className="h-4 w-4" />;
+    }
+  };
+
+  const getDeviceTypeColor = () => {
+    switch (device.type) {
+      case "router":
+        return "text-blue-500";
+      case "switch":
+        return "text-green-500";
+      case "firewall":
+        return "text-red-500";
+      case "database":
+        return "text-purple-500";
+      case "storage":
+        return "text-yellow-500";
+      case "loadbalancer":
+        return "text-orange-500";
+      default:
+        return "text-gray-500";
+    }
+  };
+
+  const tooltipFormatter = (value: any, name?: string | number): [any, string] => {
+    const nameStr = String(name || "");
+    if (nameStr.toLowerCase() === "cpu") {
+      return [`${value}%`, "CPU"];
+    }
+    if (nameStr.toLowerCase() === "memory") {
+      return [`${value}%`, "Memory"];
+    }
+    return [value, nameStr];
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">
-          {device.name}
-          <span className="ml-2 text-xs text-muted-foreground">
-            {device.ip}
-          </span>
-        </CardTitle>
-        <Badge variant="outline" className="capitalize">
-          {device.type}
-        </Badge>
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`${getDeviceTypeColor()}`}>{getDeviceIcon()}</div>
+          <CardTitle className="text-sm font-medium truncate">
+            {device.name}
+          </CardTitle>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Badge
+            variant="outline"
+            className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+          >
+            Zabbix
+          </Badge>
+          {device.zabbixHostId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() =>
+                router.push(`/zabbix?hostId=${device.zabbixHostId}`)
+              }
+              title="View in Zabbix"
+            >
+              <Eye className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
@@ -66,14 +146,45 @@ export default function DeviceCard({ device, history }: DeviceCardProps) {
             <span
               className={`inline-block h-2.5 w-2.5 rounded-full ${statusColor}`}
             />
-            <span className="text-xs font-medium">{statusText}</span>
+            <span className="text-xs font-medium flex items-center gap-1">
+              {device.status === "up" ? (
+                <Wifi className="h-3 w-3 text-green-500" />
+              ) : (
+                <WifiOff className="h-3 w-3 text-red-500" />
+              )}
+              {statusText}
+            </span>
           </div>
-          <div className="flex gap-4 text-xs">
+          <div className="flex gap-3 text-xs">
             <span>
-              CPU: <strong>{device.cpu}%</strong>
+              CPU:{" "}
+              <strong
+                className={
+                  device.cpu > 80
+                    ? "text-red-500"
+                    : device.cpu > 60
+                    ? "text-yellow-500"
+                    : "text-green-500"
+                }
+              >
+                {device.cpu}
+                {device.cpuUnits || "%"}
+              </strong>
             </span>
             <span>
-              Mem: <strong>{device.memory}%</strong>
+              Mem:{" "}
+              <strong
+                className={
+                  device.memory > 85
+                    ? "text-red-500"
+                    : device.memory > 70
+                    ? "text-yellow-500"
+                    : "text-green-500"
+                }
+              >
+                {device.memory}
+                {device.memoryUnits || "%"}
+              </strong>
             </span>
           </div>
         </div>
@@ -94,8 +205,9 @@ export default function DeviceCard({ device, history }: DeviceCardProps) {
                 <XAxis dataKey="timestamp" tick={false} axisLine={false} />
                 <YAxis domain={[0, 100]} hide />
                 <Tooltip
-                  labelFormatter={(label) => formatTime(label as string)}
+                  labelFormatter={formatTime}
                   contentStyle={{ fontSize: "10px" }}
+                  formatter={tooltipFormatter}
                 />
                 <Line
                   type="monotone"
@@ -103,6 +215,7 @@ export default function DeviceCard({ device, history }: DeviceCardProps) {
                   stroke="#3b82f6"
                   strokeWidth={2}
                   dot={false}
+                  name="CPU"
                 />
                 <Line
                   type="monotone"
@@ -110,11 +223,19 @@ export default function DeviceCard({ device, history }: DeviceCardProps) {
                   stroke="#10b981"
                   strokeWidth={2}
                   dot={false}
+                  name="Memory"
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
         )}
+
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t pt-2">
+          <span>
+            Type: <span className="capitalize">{device.type}</span>
+          </span>
+          <span>ID: {device.id.split("-").pop()}</span>
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,7 +1,16 @@
 import { pusherServer } from "@/lib/pusher/server";
 import { NextResponse } from "next/server";
 
+// Your existing device data (keep all your existing devices)
 const devices = [
+  // Singapore Region
+  { id: "sg-rtr-01", name: "SG Core Router", ip: "10.1.0.1", type: "router", region: "singapore" },
+  { id: "sg-sw-01", name: "SG Distribution Switch", ip: "10.1.0.2", type: "switch", region: "singapore" },
+  { id: "sg-sw-02", name: "SG Access Switch", ip: "10.1.0.3", type: "switch", region: "singapore" },
+  { id: "sg-rtr-02", name: "SG Edge Router", ip: "10.1.0.4", type: "router", region: "singapore" },
+  { id: "sg-fw-01", name: "SG Firewall", ip: "10.1.0.5", type: "firewall", region: "singapore" },
+  { id: "sg-lb-01", name: "SG Load Balancer", ip: "10.1.0.6", type: "loadbalancer", region: "singapore" },
+
   // Data Center - Culpepper
   { id: "cul-rtr-01", name: "Culpepper Core Router", ip: "10.2.0.1", type: "router", region: "culpepper" },
   { id: "cul-sw-01", name: "Culpepper Distribution Switch", ip: "10.2.0.2", type: "switch", region: "culpepper" },
@@ -41,7 +50,6 @@ function randomInt(min: number, max: number) {
 function generateDeviceData() {
   return devices.map((device) => {
     const isUp = Math.random() > 0.15;
-    
     return {
       ...device,
       cpu: isUp ? randomInt(10, 85) : 0,
@@ -54,16 +62,54 @@ function generateDeviceData() {
   });
 }
 
+// Compress data to fit within Pusher's 10KB limit
+function compressData(data: any[]) {
+  // Take only essential fields and limit number of items
+  const essentialData = data.slice(0, 20).map(item => ({
+    id: item.id,
+    name: item.name,
+    cpu: item.cpu,
+    memory: item.memory,
+    status: item.status,
+    trafficIn: item.trafficIn,
+    trafficOut: item.trafficOut,
+    timestamp: item.timestamp,
+    region: item.region,
+    type: item.type,
+  }));
+  
+  return essentialData;
+}
+
 export async function GET() {
   try {
-    const data = generateDeviceData();
-    await pusherServer.trigger("monitoring", "device-updates", data);
-    return NextResponse.json({ success: true, data });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { success: false, error: "Failed to trigger update" },
-      { status: 500 }
-    );
+    // Generate local device data
+    const localData = generateDeviceData();
+    
+    // Compress the data to fit within Pusher limits
+    const compressedData = compressData(localData);
+    
+    // Push to Pusher
+    await pusherServer.trigger("monitoring", "device-updates", compressedData);
+    
+    // Also send full data via the response for the initial load
+    return NextResponse.json({ 
+      success: true, 
+      data: localData,
+      compressed: compressedData,
+      totalDevices: localData.length,
+      pushedToPusher: true
+    });
+  } catch (error: any) {
+    console.error("Pusher trigger error:", error);
+    
+    // If Pusher fails, still return the data for the initial load
+    const localData = generateDeviceData();
+    return NextResponse.json({ 
+      success: true, 
+      data: localData,
+      totalDevices: localData.length,
+      pusherError: error.message || "Pusher error"
+    });
   }
 }

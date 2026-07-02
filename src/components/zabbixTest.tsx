@@ -316,6 +316,8 @@ export default function ZabbixTest() {
     }
   };
 
+
+  
   const fetchLatestData = async (hostId: string) => {
     setLoading(true);
     setError(null);
@@ -772,4 +774,7 @@ export default function ZabbixTest() {
       )}
     </div>
   );
+
+  
 }
+

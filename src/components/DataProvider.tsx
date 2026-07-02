@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { pusherClient } from "@/lib/pusher/client";
 import { useDeviceStore } from "@/lib/store";
 
@@ -9,51 +9,99 @@ interface Device {
   name: string;
   ip: string;
   type: string;
+  region: string;
   cpu: number;
   memory: number;
   status: "up" | "down";
   trafficIn: number;
   trafficOut: number;
   timestamp: string;
-  region: string;
+  zabbixHostId?: string;
+  cpuUnits: string; // Made required with default value
+  memoryUnits: string; // Made required with default value
 }
 
 export default function DataProvider({ children }: { children: React.ReactNode }) {
   const setDevices = useDeviceStore((state) => state.setDevices);
+  const [isConnected, setIsConnected] = useState(false);
 
   const handleDeviceUpdate = (newDevices: Device[]) => {
-    console.log("DataProvider received data:", newDevices);
-    setDevices(newDevices);
+    console.log("DataProvider received data:", newDevices.length, "devices");
+    
+    // Ensure all devices have cpuUnits and memoryUnits
+    const devicesWithUnits = newDevices.map(device => ({
+      ...device,
+      cpuUnits: device.cpuUnits || "%",
+      memoryUnits: device.memoryUnits || "%",
+    }));
+    
+    // Update store with new data
+    setDevices(devicesWithUnits);
+  };
+
+  const fetchInitialData = async () => {
+    try {
+      const response = await fetch("/api/pusher/trigger");
+      const json = await response.json();
+      
+      if (json.success && json.data) {
+        console.log("Initial data loaded:", json.data.length, "devices");
+        handleDeviceUpdate(json.data);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to fetch initial data:", error);
+      return false;
+    }
   };
 
   useEffect(() => {
-    const channel = pusherClient.subscribe("monitoring");
+    let isMounted = true;
 
-    channel.bind("device-updates", (data: Device[]) => {
-      handleDeviceUpdate(data);
-    });
+    const initialize = async () => {
+      // Fetch initial data
+      await fetchInitialData();
 
-    fetch("/api/pusher/trigger")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) handleDeviceUpdate(json.data);
-      })
-      .catch(console.error);
+      // Subscribe to Pusher for real-time updates
+      if (isMounted) {
+        const channel = pusherClient.subscribe("monitoring");
 
-    const interval = setInterval(() => {
-      fetch("/api/pusher/trigger")
-        .then((res) => res.json())
-        .then((json) => {
-          if (json.success) handleDeviceUpdate(json.data);
-        })
-        .catch(console.error);
-    }, 5000);
+        channel.bind("device-updates", (data: Device[]) => {
+          console.log("Pusher real-time update received:", data?.length || 0, "devices");
+          if (data && data.length > 0) {
+            handleDeviceUpdate(data);
+          }
+        });
 
-    return () => {
-      channel.unbind_all();
-      pusherClient.unsubscribe("monitoring");
-      clearInterval(interval);
+        setIsConnected(true);
+        console.log("Pusher connected and listening for updates");
+
+        // Set up interval as fallback if Pusher fails
+        const interval = setInterval(async () => {
+          if (!isMounted) return;
+          
+          try {
+            const response = await fetch("/api/pusher/trigger");
+            const json = await response.json();
+            if (json.success && json.data) {
+              handleDeviceUpdate(json.data);
+            }
+          } catch (error) {
+            console.error("Interval fetch failed:", error);
+          }
+        }, 30000); // 30 seconds fallback
+
+        return () => {
+          isMounted = false;
+          clearInterval(interval);
+          channel.unbind_all();
+          pusherClient.unsubscribe("monitoring");
+        };
+      }
     };
+
+    initialize();
   }, [setDevices]);
 
   return <>{children}</>;

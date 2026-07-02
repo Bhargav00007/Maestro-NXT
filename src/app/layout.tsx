@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import LayoutClient from "./layout-client";
-import DataProvider from "@/components/DataProvider";
+import ZabbixDataProvider from "@/components/ZabbixDataProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,9 +25,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable}` }>
-      <body className="min-h-screen">
-        <LayoutClient><DataProvider>{children}</DataProvider></LayoutClient> 
+    <html lang="en" suppressHydrationWarning>
+      <body className={`min-h-screen ${geistSans.variable} ${geistMono.variable}`}>
+        <LayoutClient>
+          <ZabbixDataProvider>{children}</ZabbixDataProvider>
+        </LayoutClient>
       </body>
     </html>
   );
