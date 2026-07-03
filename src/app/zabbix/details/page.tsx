@@ -371,7 +371,8 @@ export default function ZabbixDeviceDetailPage() {
     setPingCopied(false);
 
     try {
-      const res = await fetch(`/api/ping?host=${encodeURIComponent(device.ip)}`);
+      const url = `/api/ping?host=${encodeURIComponent(device.ip)}&hostId=${encodeURIComponent(device.zabbixHostId || "")}`;
+      const res = await fetch(url);
       const data = await res.json();
       if (res.ok) {
         setPingResult(data.output || "No output");

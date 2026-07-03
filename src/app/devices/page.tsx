@@ -29,7 +29,6 @@ export default function ZabbixPage() {
   const devices = useDeviceStore((state) => state.devices);
   const [error, setError] = useState<string | null>(null);
 
-  // Show all devices (they are all from Zabbix)
   const zabbixDevices = devices;
 
   const getStatusBadge = (status?: string) => {
