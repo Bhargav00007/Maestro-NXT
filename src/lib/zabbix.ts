@@ -33,8 +33,6 @@ export class ZabbixAPI {
     this.url = config.url.replace(/\/$/, '');
     this.apiUrl = `${this.url}/api_jsonrpc.php`;
     if (this.debug) {
-      console.log("Zabbix API URL:", this.apiUrl);
-      console.log("Zabbix User:", config.user);
     }
   }
 
@@ -74,7 +72,6 @@ export class ZabbixAPI {
       const data = await response.json();
 
       if (this.debug) {
-        console.log(`Zabbix Response - Method: ${method}`, JSON.stringify(data, null, 2));
       }
 
       if (data.error) {
@@ -88,7 +85,6 @@ export class ZabbixAPI {
       return data.result;
     } catch (error: any) {
       if (this.debug) {
-        console.error(`Zabbix Request Failed - Method: ${method}`, error);
       }
       throw error;
     }
@@ -108,20 +104,14 @@ export class ZabbixAPI {
 
     let lastError: any = null;
 
-    if (this.debug) {
-      console.log(`Attempting login with user: "${user}"`);
-    }
-
     for (const params of loginAttempts) {
       try {
         if (this.debug) {
-          console.log("Trying login params:", params);
         }
         const result = await this.request("user.login", params);
         if (result !== undefined && result !== null) {
           this.auth = result;
           if (this.debug) {
-            console.log("Login successful with params:", params);
           }
           return result;
         }
@@ -135,7 +125,6 @@ export class ZabbixAPI {
     }
 
     if (this.debug) {
-      console.error("Login failed after trying all parameter combinations.", lastError);
     }
     throw new Error(`Zabbix login failed: ${lastError?.message || lastError || 'Unknown error'}`);
   }
