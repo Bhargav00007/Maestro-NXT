@@ -71,9 +71,7 @@ export default function AlertsPage() {
       const res = await fetch("/api/zabbix?action=problems");
       const data = await res.json();
       if (data.success && data.data) {
-        // Already filtered for problems, but ensure value=1
         const problems = data.data.filter((t: ZabbixTrigger) => t.value === "1");
-        // Sort by lastchange descending (latest first)
         problems.sort((a: { lastchange: string; }, b: { lastchange: string; }) => parseInt(b.lastchange) - parseInt(a.lastchange));
         return problems;
       }
@@ -89,6 +87,7 @@ export default function AlertsPage() {
     try {
       const res = await fetch("/api/zabbix?action=events&limit=200");
       const data = await res.json();
+      console.log("History API response:", data); // debug
       if (data.success && data.data) {
         // Sort by clock descending (latest first)
         const events = data.data.sort((a: ZabbixEvent, b: ZabbixEvent) => parseInt(b.clock) - parseInt(a.clock));
@@ -151,13 +150,11 @@ export default function AlertsPage() {
 
       const local = generateLocalAlerts();
 
-      // Combine: Zabbix problems (already sorted by latest) + local alerts
       const combined: (ZabbixTrigger | LocalAlert)[] = [
         ...triggers,
         ...local,
       ];
 
-      // Sort by timestamp descending (latest first)
       combined.sort((a, b) => {
         const ta = 'lastchange' in a ? parseInt(a.lastchange) : (a as LocalAlert).timestamp;
         const tb = 'lastchange' in b ? parseInt(b.lastchange) : (b as LocalAlert).timestamp;
@@ -239,6 +236,27 @@ export default function AlertsPage() {
     if (variant === "destructive") return <AlertCircle className="h-4 w-4" />;
     if (variant === "warning") return <AlertTriangle className="h-4 w-4" />;
     return <Bell className="h-4 w-4" />;
+  };
+
+  // Helper: render message with host bold on first line, rest on next
+  const renderMessage = (message: string, hostName?: string) => {
+    let host = hostName || "Unknown";
+    let rest = message;
+    if (message.startsWith(host + ":")) {
+      rest = message.substring(host.length + 1).trim();
+    } else if (message.includes(":")) {
+      const parts = message.split(":");
+      if (parts.length > 1) {
+        host = parts[0].trim();
+        rest = parts.slice(1).join(":").trim();
+      }
+    }
+    return (
+      <div className="flex flex-col">
+        <span className="font-bold text-sm">{host}</span>
+        <span className="text-xs text-muted-foreground">{rest}</span>
+      </div>
+    );
   };
 
   if (loading) {
@@ -344,10 +362,8 @@ export default function AlertsPage() {
                         <div className="flex items-start gap-3">
                           {getAlertIcon(alert)}
                           <div>
-                            <p className="font-medium text-sm">{description}</p>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                              <span>{hostName}</span>
-                              <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground/50" />
+                            {renderMessage(description, hostName)}
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
                               <span className={cn("px-1.5 py-0.5 rounded-full text-white text-[10px]", priorityInfo.color)}>
                                 {priorityInfo.label}
                               </span>

@@ -47,7 +47,6 @@ export default function ZabbixDataProvider({
 
   const fetchZabbixData = async () => {
     try {
-      console.log("🔄 Fetching Zabbix data...");
 
       const response = await fetch("/api/zabbix?action=hosts");
       const data = await response.json();
@@ -68,7 +67,6 @@ export default function ZabbixDataProvider({
           if (cpuItem && cpuItem.lastvalue) {
             cpu = Math.round(parseFloat(cpuItem.lastvalue));
             cpuUnits = cpuItem.units || "%";
-            console.log(`💻 CPU for ${host.name}: ${cpu}${cpuUnits}`);
           }
 
           // ---- Memory ----
@@ -83,7 +81,6 @@ export default function ZabbixDataProvider({
           if (memItem && memItem.lastvalue) {
             memory = Math.round(parseFloat(memItem.lastvalue));
             memoryUnits = memItem.units || "%";
-            console.log(`🧠 Memory for ${host.name}: ${memory}${memoryUnits}`);
           }
 
           // ---- Host status ----
@@ -112,7 +109,6 @@ export default function ZabbixDataProvider({
             isUp = false;
           }
 
-          console.log(`📡 Host ${host.name}: available=${host.available}, isUp=${isUp}`);
 
           // ---- Traffic (example) ----
           let trafficIn = 0;
@@ -173,20 +169,17 @@ export default function ZabbixDataProvider({
 
         const upCount = devices.filter((d: { status: string }) => d.status === "up").length;
         const downCount = devices.filter((d: { status: string }) => d.status === "down").length;
-        console.log(
-          `✅ Loaded ${devices.length} devices from Zabbix (${upCount} UP, ${downCount} DOWN)`
-        );
+  
 
         devices.forEach((d: any) => {
           console.log(
-            `📊 ${d.name} (${d.region}): CPU=${d.cpu}${d.cpuUnits}, Memory=${d.memory}${d.memoryUnits}, Status=${d.status}`
           );
         });
       } else {
-        console.error("❌ Failed to fetch Zabbix data:", data.error);
+        console.error("Failed to fetch Zabbix data:", data.error);
       }
     } catch (error) {
-      console.error("❌ Failed to fetch Zabbix data:", error);
+      console.error("Failed to fetch Zabbix data:", error);
     }
   };
 

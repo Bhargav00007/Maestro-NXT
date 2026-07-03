@@ -636,7 +636,7 @@ export default function ZabbixDeviceDetailPage() {
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
               Real‑time updates via WebSocket{" "}
-              {isConnected ? "✅ Connected" : "⏳ Connecting..."}
+              {isConnected ? "Connected" : "Connecting..."}
             </div>
 
             {/* Combined Chart */}
@@ -848,10 +848,10 @@ export default function ZabbixDeviceDetailPage() {
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
                     {device.cpu > 80
-                      ? "⚠️ High"
+                      ? "High"
                       : device.cpu > 60
-                      ? "⚡ Moderate"
-                      : "✅ Normal"}
+                      ? "Moderate"
+                      : "Normal"}
                   </p>
                 </CardContent>
               </Card>
