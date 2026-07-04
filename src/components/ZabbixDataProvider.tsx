@@ -29,7 +29,6 @@ interface ZabbixHost {
   }>;
 }
 
-// Helper: determine region from host name (case‑insensitive)
 function getRegionFromName(name: string): string {
   const upper = name.toUpperCase();
   if (upper.includes("CUL")) return "culpepper";
@@ -55,7 +54,6 @@ export default function ZabbixDataProvider({
         const devices = data.data.map((host: ZabbixHost) => {
           const items = host.items || [];
 
-          // ---- CPU ----
           let cpu = 0;
           let cpuUnits = "%";
           const cpuItem = items.find(
@@ -69,7 +67,6 @@ export default function ZabbixDataProvider({
             cpuUnits = cpuItem.units || "%";
           }
 
-          // ---- Memory ----
           let memory = 0;
           let memoryUnits = "%";
           const memItem = items.find(
@@ -83,7 +80,6 @@ export default function ZabbixDataProvider({
             memoryUnits = memItem.units || "%";
           }
 
-          // ---- Host status ----
           let isUp = true;
           const pingItem = items.find(
             (item) => item.key_ === "icmpping" || item.key_.includes("icmpping")
@@ -101,7 +97,6 @@ export default function ZabbixDataProvider({
             isUp = true;
           }
 
-          // Check Zabbix agent availability
           const agentItem = items.find(
             (item) => item.key_ === "zabbix[host,agent,available]"
           );
@@ -110,7 +105,6 @@ export default function ZabbixDataProvider({
           }
 
 
-          // ---- Traffic (example) ----
           let trafficIn = 0;
           let trafficOut = 0;
           const netInItem = items.find(
@@ -126,7 +120,6 @@ export default function ZabbixDataProvider({
             trafficOut = Math.round(parseFloat(netOutItem.lastvalue) / 1000000);
           }
 
-          // ---- Device type ----
           let type = "server";
           const name = (host.name || host.host).toLowerCase();
           if (name.includes("router") || name.includes("rtr")) type = "router";
@@ -137,10 +130,8 @@ export default function ZabbixDataProvider({
           else if (name.includes("database") || name.includes("db")) type = "database";
           else if (name.includes("mpls")) type = "router";
 
-          // ---- Region from host name ----
           const region = getRegionFromName(host.name || host.host);
 
-          // ---- IP ----
           let ip = host.host;
           if (host.interfaces && host.interfaces.length > 0) {
             ip = host.interfaces[0].ip || host.host;
@@ -151,7 +142,7 @@ export default function ZabbixDataProvider({
             name: host.name || host.host,
             ip: ip,
             type: type,
-            region: region,                     // 👈 assigned here
+            region: region,                    
             cpu: isUp ? cpu : 0,
             memory: isUp ? memory : 0,
             status: isUp ? "up" : "down",
@@ -164,7 +155,6 @@ export default function ZabbixDataProvider({
           };
         });
 
-        // Update the store
         setDevices(devices);
 
         const upCount = devices.filter((d: { status: string }) => d.status === "up").length;

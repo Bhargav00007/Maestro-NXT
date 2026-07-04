@@ -149,7 +149,6 @@ export async function GET(request: NextRequest) {
               break;
             }
           } catch (e) {
-            // try next type
           }
         }
 
@@ -222,7 +221,6 @@ export async function GET(request: NextRequest) {
         break;
       }
 
-      // ✅ FIXED: Correct params for events
       case "events": {
         const params: any = {
           output: [
@@ -240,16 +238,12 @@ export async function GET(request: NextRequest) {
           sortfield: "clock",
           sortorder: "DESC",
           limit: limit,
-          source: 0,        // source = 0 means trigger events
-          // object: 0,     // object = 0 for triggers (optional)
+          source: 0,        
         };
         if (hostId) {
           params.hostids = hostId;
         }
-        // Optionally filter by value to get only problems or all events
-        // If you want only problems, add: params.filter = { value: 1 };
-        // But for history we want both OK and PROBLEM.
-        // We'll leave it without filter to get all events.
+
         result = await zabbixRequest("event.get", params, token);
         break;
       }
