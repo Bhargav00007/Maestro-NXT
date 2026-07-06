@@ -42,10 +42,8 @@ export default function DashboardCards() {
     });
   }, [devices]);
 
-  // All devices (no region filter)
   const allDevices = devices;
 
-  // Paginated devices
   const visibleDevices = allDevices.slice(0, visibleCount);
   const hasMore = visibleCount < allDevices.length;
 

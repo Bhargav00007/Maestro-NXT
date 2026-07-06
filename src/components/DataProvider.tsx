@@ -17,8 +17,8 @@ interface Device {
   trafficOut: number;
   timestamp: string;
   zabbixHostId?: string;
-  cpuUnits: string; // Made required with default value
-  memoryUnits: string; // Made required with default value
+  cpuUnits: string; 
+  memoryUnits: string; 
 }
 
 export default function DataProvider({ children }: { children: React.ReactNode }) {
@@ -28,14 +28,12 @@ export default function DataProvider({ children }: { children: React.ReactNode }
   const handleDeviceUpdate = (newDevices: Device[]) => {
     console.log("DataProvider received data:", newDevices.length, "devices");
     
-    // Ensure all devices have cpuUnits and memoryUnits
     const devicesWithUnits = newDevices.map(device => ({
       ...device,
       cpuUnits: device.cpuUnits || "%",
       memoryUnits: device.memoryUnits || "%",
     }));
     
-    // Update store with new data
     setDevices(devicesWithUnits);
   };
 
@@ -60,10 +58,8 @@ export default function DataProvider({ children }: { children: React.ReactNode }
     let isMounted = true;
 
     const initialize = async () => {
-      // Fetch initial data
       await fetchInitialData();
 
-      // Subscribe to Pusher for real-time updates
       if (isMounted) {
         const channel = pusherClient.subscribe("monitoring");
 
@@ -77,7 +73,6 @@ export default function DataProvider({ children }: { children: React.ReactNode }
         setIsConnected(true);
         console.log("Pusher connected and listening for updates");
 
-        // Set up interval as fallback if Pusher fails
         const interval = setInterval(async () => {
           if (!isMounted) return;
           
@@ -90,7 +85,7 @@ export default function DataProvider({ children }: { children: React.ReactNode }
           } catch (error) {
             console.error("Interval fetch failed:", error);
           }
-        }, 30000); // 30 seconds fallback
+        }, 30000); 
 
         return () => {
           isMounted = false;
