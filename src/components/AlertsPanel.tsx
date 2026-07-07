@@ -115,7 +115,6 @@ export default function AlertsPanel() {
     return <AlertTriangle className="h-4 w-4" />;
   };
 
-  // Format: Host (bold, own line) + description (small, next line)
   const renderMessage = (message: string) => {
     const colonIndex = message.indexOf(":");
     if (colonIndex === -1) {

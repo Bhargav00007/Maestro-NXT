@@ -25,10 +25,17 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
   const router = useRouter();
   const devices = useDeviceStore((state) => state.devices);
   const [history, setHistory] = useState<Record<string, HistoryItem[]>>({});
+  const [filterType, setFilterType] = useState<string | null>(null); // null = "All"
 
   const regionDevices = useMemo(() => {
     return devices.filter(d => d.region === region);
   }, [devices, region]);
+
+  const filteredDevices = useMemo(() => {
+    return filterType
+      ? regionDevices.filter(d => d.type === filterType)
+      : regionDevices;
+  }, [regionDevices, filterType]);
 
   useEffect(() => {
     const updated = { ...history };
@@ -71,10 +78,13 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
     ? Math.round(regionDevices.reduce((sum, d) => sum + d.memory, 0) / totalDevices)
     : 0;
 
-  const deviceTypes: Record<string, number> = {};
-  regionDevices.forEach(d => {
-    deviceTypes[d.type] = (deviceTypes[d.type] || 0) + 1;
-  });
+  const deviceTypeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    regionDevices.forEach(d => {
+      counts[d.type] = (counts[d.type] || 0) + 1;
+    });
+    return counts;
+  }, [regionDevices]);
 
   const getTypeIcon = (type: string) => {
     switch(type) {
@@ -138,20 +148,43 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
       <div className="rounded-lg border bg-card p-4">
         <h3 className="text-sm font-semibold mb-3">Device Types</h3>
         <div className="flex flex-wrap gap-3">
-          {Object.entries(deviceTypes).map(([type, count]) => (
-            <div key={type} className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
+          <button
+            onClick={() => setFilterType(null)}
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              filterType === null
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted hover:bg-muted/80"
+            }`}
+          >
+            All ({totalDevices})
+          </button>
+
+          {Object.entries(deviceTypeCounts).map(([type, count]) => (
+            <button
+              key={type}
+              onClick={() => setFilterType(type)}
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium capitalize transition-colors ${
+                filterType === type
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted hover:bg-muted/80"
+              }`}
+            >
               {getTypeIcon(type)}
-              <span className="text-sm font-medium capitalize">{type}</span>
-              <span className="text-sm text-muted-foreground">({count})</span>
-            </div>
+              {type} ({count})
+            </button>
           ))}
         </div>
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold mb-4">All Devices in {title}</h3>
+        <h3 className="text-lg font-semibold mb-4">
+          {filterType
+            ? `${filterType.charAt(0).toUpperCase() + filterType.slice(1)}s in ${title}`
+            : `All Devices in ${title}`
+          }
+        </h3>
         <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-          {regionDevices.map((device) => (
+          {filteredDevices.map((device) => (
             <DeviceCard
               key={device.id}
               device={device}
@@ -159,6 +192,11 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
             />
           ))}
         </div>
+        {filteredDevices.length === 0 && (
+          <p className="text-muted-foreground text-sm mt-2">
+            No devices of this type in this region.
+          </p>
+        )}
       </div>
     </div>
   );
