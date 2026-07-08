@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/mapcn-map-arc";
 import { useEffect, useRef, useState } from "react";
 import { Plus, Minus, Home } from "lucide-react";
+import { useRouter } from "next/navigation"; 
 
 const hub = { name: "Hyderabad", lng: 78.4867, lat: 17.3850 };
 
@@ -26,6 +27,7 @@ const arcs = destinations.map((dest) => ({
 }));
 
 export default function WorldMap() {
+  const router = useRouter(); 
   const mapRef = useRef<any>(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -66,7 +68,6 @@ export default function WorldMap() {
     }
   };
 
-  // Function to zoom out
   const zoomOut = () => {
     if (mapRef.current) {
       const map = mapRef.current;
@@ -76,6 +77,10 @@ export default function WorldMap() {
         duration: 500,
       });
     }
+  };
+
+  const navigateTo = (path: string) => {
+    router.push(path);
   };
 
   useEffect(() => {
@@ -141,12 +146,16 @@ export default function WorldMap() {
             interactive={false}
           />
 
-          <MapMarker longitude={hub.lng} latitude={hub.lat}>
+          <MapMarker
+            longitude={hub.lng}
+            latitude={hub.lat}
+            onClick={() => navigateTo("/hyderabad")}
+          >
             <MarkerContent>
-              <div className="size-2 rounded-full border-2 border-white bg-blue-500 shadow-md sm:size-3" />
+              <div className="size-2 rounded-full border-2 border-white bg-blue-500 shadow-md sm:size-3 cursor-pointer transition-transform hover:scale-110" />
               <MarkerLabel
                 position="top"
-                className="bg-background/80 rounded-sm px-1 py-0.5 text-[9px] font-semibold backdrop-blur sm:px-1.5 sm:text-[11px]"
+                className="bg-background/80 rounded-sm px-1 py-0.5 text-[9px] font-semibold backdrop-blur cursor-pointer sm:px-1.5 sm:text-[11px] hover:bg-background/90"
               >
                 {hub.name}
               </MarkerLabel>
@@ -154,10 +163,18 @@ export default function WorldMap() {
           </MapMarker>
 
           {destinations.map((dest) => (
-            <MapMarker key={dest.name} longitude={dest.lng} latitude={dest.lat}>
+            <MapMarker
+              key={dest.name}
+              longitude={dest.lng}
+              latitude={dest.lat}
+              onClick={() => navigateTo(`/${dest.name.toLowerCase()}`)}
+            >
               <MarkerContent>
-                <div className="size-1.5 rounded-full border-2 border-white bg-emerald-500 shadow sm:size-2" />
-                <MarkerLabel position="top" className="text-[8px] sm:text-[10px]">
+                <div className="size-1.5 rounded-full border-2 border-white bg-emerald-500 shadow sm:size-2 cursor-pointer transition-transform hover:scale-110" />
+                <MarkerLabel
+                  position="top"
+                  className="text-[8px] sm:text-[10px] cursor-pointer hover:underline"
+                >
                   {dest.name}
                 </MarkerLabel>
               </MarkerContent>

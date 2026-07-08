@@ -64,7 +64,7 @@ export default function SearchPage() {
               <DeviceCard
                 key={device.id}
                 device={device}
-                history={[]} // No history on search page (optional)
+                history={[]} 
               />
             ))}
           </div>
