@@ -245,11 +245,15 @@ export default function ZabbixDeviceDetailPage() {
         const uptimeItem = findItemByKey(data.data, [
           "system.uptime",
           "agent.uptime",
+          "system.net.uptime[sysUpTime.0]",
+          "uptime",
         ]);
         const tempItem = findItemByKey(data.data, [
           "sensor.temp",
           "hw.temp",
           "temperature",
+          "sensor.temp.value[ciscoEnvMonTemperatureValue.4]",
+          "temp",
         ]);
         const pingItem = findItemByKey(data.data, [
           "icmppingsec",
@@ -481,7 +485,9 @@ export default function ZabbixDeviceDetailPage() {
     if (seconds < 60) return `${Math.floor(seconds)} sec`;
     if (seconds < 3600) return `${Math.floor(seconds / 60)} min`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)} h`;
-    return `${Math.floor(seconds / 86400)} d ${Math.floor((seconds % 86400) / 3600)} h`;
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    return `${days} d ${hours} h`;
   };
 
   if (error) {
@@ -512,7 +518,6 @@ export default function ZabbixDeviceDetailPage() {
     );
   }
 
-  const statusColor = device.status === "up" ? "text-green-500" : "text-red-500";
   const statusBadgeColor = device.status === "up" ? "bg-green-500" : "bg-red-500";
 
   return (
