@@ -44,7 +44,6 @@ export default function ZabbixTest() {
   const [rawApiResponse, setRawApiResponse] = useState<any>(null);
   const [hostStatus, setHostStatus] = useState<any>(null);
 
-  // Try all possible parameter formats
   const runDirectAPITest = async () => {
     setLoading(true);
     setError(null);
@@ -69,9 +68,8 @@ export default function ZabbixTest() {
         }
       };
 
-      // First, let's test if the API endpoint exists and returns something
       try {
-        console.log("📡 Testing API endpoint...");
+        console.log("Testing API endpoint...");
         const pingResponse = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json-rpc" },
@@ -90,7 +88,7 @@ export default function ZabbixTest() {
           data: pingData,
           status: pingResponse.status
         });
-        console.log("📡 API endpoint test result:", pingData);
+        console.log("API endpoint test result:", pingData);
         
         if (pingData) {
           setRawApiResponse(pingData);
@@ -103,10 +101,9 @@ export default function ZabbixTest() {
           error: err.message,
           status: 500
         });
-        console.error("❌ API endpoint test failed:", err.message);
+        console.error("API endpoint test failed:", err.message);
       }
 
-      // Use the working format (Format 4: username/password)
       const workingFormat = { 
         name: "Format 4 (username/password)", 
         params: { 
@@ -115,7 +112,7 @@ export default function ZabbixTest() {
         } 
       };
 
-      console.log(`🔄 Trying ${workingFormat.name}...`);
+      console.log(`Trying ${workingFormat.name}...`);
       try {
         const requestBody: any = {
           jsonrpc: "2.0",
@@ -141,13 +138,12 @@ export default function ZabbixTest() {
         };
         
         results.tests.push(testResult);
-        console.log(`${loginData.error ? '❌' : '✅'} ${workingFormat.name}:`, loginData);
+        console.log(`${loginData.error ? 'Error' : 'No error'} ${workingFormat.name}:`, loginData);
         
         if (!loginData.error && loginData.result) {
-          console.log("🎉 Login successful! Fetching hosts...");
+          console.log("Login successful! Fetching hosts...");
           const token = loginData.result;
           
-          // Fetch hosts with more details
           const hostsResponse = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json-rpc" },
@@ -171,7 +167,6 @@ export default function ZabbixTest() {
             const hostList = hostsData.result || [];
             setHosts(hostList);
             
-            // Get status summary
             const available = hostList.filter((h: any) => h.available === "0").length;
             const unavailable = hostList.filter((h: any) => h.available === "1").length;
             const unknown = hostList.filter((h: any) => h.available === "2").length;
@@ -186,7 +181,7 @@ export default function ZabbixTest() {
               statusSummary: { available, unavailable, unknown }
             });
             setApiDetails({ success: true, data: hostList });
-            console.log(`✅ Found ${hostList.length} hosts`);
+            console.log(`Found ${hostList.length} hosts`);
           } else {
             results.tests.push({
               name: `Get Hosts`,
@@ -255,7 +250,6 @@ export default function ZabbixTest() {
       const zabbixUrl = process.env.NEXT_PUBLIC_ZABBIX_URL || "http://172.24.192.57/zabbix";
       const apiUrl = `${zabbixUrl}/api_jsonrpc.php`;
       
-      // First login to get token
       const loginResponse = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json-rpc" },
@@ -280,7 +274,6 @@ export default function ZabbixTest() {
       
       const token = loginData.result;
       
-      // Fetch items for the host
       const itemsResponse = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json-rpc" },
@@ -303,7 +296,7 @@ export default function ZabbixTest() {
         setItems(itemsData.result || []);
         setActiveTab('items');
         setApiDetails({ success: true, data: itemsData.result });
-        console.log(`✅ Found ${itemsData.result?.length || 0} items for host ${hostId}`);
+        console.log(`Found ${itemsData.result?.length || 0} items for host ${hostId}`);
       } else {
         setError(`Failed to fetch items: ${itemsData.error.message || 'Unknown error'}`);
         console.error("Items Error:", itemsData.error);
@@ -316,8 +309,6 @@ export default function ZabbixTest() {
     }
   };
 
-
-  
   const fetchLatestData = async (hostId: string) => {
     setLoading(true);
     setError(null);
@@ -379,7 +370,7 @@ export default function ZabbixTest() {
         setItems(itemsWithValues);
         setActiveTab('data');
         setApiDetails({ success: true, data: itemsWithValues });
-        console.log(`✅ Found ${itemsWithValues.length} items with data for host ${hostId}`);
+        console.log(` Found ${itemsWithValues.length} items with data for host ${hostId}`);
       } else {
         setError(`Failed to fetch data: ${itemsData.error.message || 'Unknown error'}`);
         console.error("Data Error:", itemsData.error);
@@ -429,6 +420,7 @@ export default function ZabbixTest() {
   };
 
   const getItemTypeIcon = (key: string) => {
+    if (key.includes('icmp')) return <Wifi className="h-4 w-4 text-cyan-500" />;
     if (key.includes('cpu')) return <Cpu className="h-4 w-4 text-blue-500" />;
     if (key.includes('memory') || key.includes('mem')) return <MemoryStick className="h-4 w-4 text-purple-500" />;
     if (key.includes('traffic') || key.includes('net')) return <Activity className="h-4 w-4 text-green-500" />;
@@ -451,10 +443,18 @@ export default function ZabbixTest() {
     return <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">Unknown</span>;
   };
 
-  const formatValue = (value?: string, units?: string) => {
+  const formatValue = (value?: string, units?: string, key?: string) => {
     if (!value) return 'N/A';
     const num = parseFloat(value);
     if (isNaN(num)) return value;
+    
+    if (key && key.includes('icmp') && units === 's') {
+      if (num < 1) {
+        return `${(num * 1000).toFixed(1)} ms`;
+      } else {
+        return `${num.toFixed(1)} s`;
+      }
+    }
     
     if (units === '%') return `${num.toFixed(1)}%`;
     if (units === 'bps' || units === 'Bps') {
@@ -568,9 +568,9 @@ export default function ZabbixTest() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       {test.success ? (
-                        <span className="text-green-500">✅</span>
+                        <span className="text-green-500">Success</span>
                       ) : (
-                        <span className="text-red-500">❌</span>
+                        <span className="text-red-500">Failed</span>
                       )}
                       <span className="font-medium">{test.name}</span>
                       {test.params && (
@@ -648,7 +648,7 @@ export default function ZabbixTest() {
         </button>
       )}
 
-      {/* Hosts List */}
+
       {!loading && hosts.length > 0 && activeTab === 'hosts' && (
         <div className="rounded-lg border">
           <div className="px-4 py-3 border-b bg-muted/50 flex items-center justify-between">
@@ -696,7 +696,7 @@ export default function ZabbixTest() {
         </div>
       )}
 
-      {/* Items/Data Display */}
+
       {!loading && selectedHost && (activeTab === 'items' || activeTab === 'data') && (
         <div className="rounded-lg border">
           <div className="px-4 py-3 border-b bg-muted/50">
@@ -737,7 +737,7 @@ export default function ZabbixTest() {
                     </div>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
                       <p className="text-sm font-semibold">
-                        {formatValue(item.lastvalue, item.units)}
+                        {formatValue(item.lastvalue, item.units, item.key_)}
                       </p>
                       <div className="flex items-center gap-2">
                         {getItemStatusBadge(item.status)}
@@ -756,7 +756,7 @@ export default function ZabbixTest() {
         </div>
       )}
 
-      {/* Loading indicator */}
+
       {loading && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -764,7 +764,6 @@ export default function ZabbixTest() {
         </div>
       )}
 
-      {/* No Data */}
       {!loading && hosts.length === 0 && !error && !testResults && (
         <div className="text-center py-12 text-muted-foreground border rounded-lg">
           <Server className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -774,7 +773,4 @@ export default function ZabbixTest() {
       )}
     </div>
   );
-
-  
 }
-

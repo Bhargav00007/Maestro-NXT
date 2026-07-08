@@ -38,6 +38,8 @@ import {
   Copy,
   Check,
   X,
+  Clock,
+  Thermometer,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +77,12 @@ interface ZabbixItem {
   status?: string;
 }
 
+interface ExtraMetrics {
+  uptime: number;
+  temperature: number;
+  ping: number;
+}
+
 export default function ZabbixDeviceDetailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -88,14 +96,18 @@ export default function ZabbixDeviceDetailPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [extraMetrics, setExtraMetrics] = useState<ExtraMetrics>({
+    uptime: 0,
+    temperature: 0,
+    ping: 0,
+  });
   const historyRef = useRef<HistoryItem[]>([]);
   const deviceRef = useRef<DeviceDetail | null>(null);
   const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Ping modal state
   const [pingModalOpen, setPingModalOpen] = useState(false);
   const [pingLoading, setPingLoading] = useState(false);
-  const [pingResult, setPingResult] = useState<string>("");
+  const [pingResult, setPingResult] = useState("");
   const [pingError, setPingError] = useState<string | null>(null);
   const [pingCopied, setPingCopied] = useState(false);
 
@@ -103,7 +115,6 @@ export default function ZabbixDeviceDetailPage() {
     deviceRef.current = device;
   }, [device]);
 
-  // Find device in store
   useEffect(() => {
     if (!hostId) {
       setError("No host ID provided");
@@ -118,7 +129,6 @@ export default function ZabbixDeviceDetailPage() {
     }
   }, [hostId, devices]);
 
-  // Fetch initial data and WebSocket
   useEffect(() => {
     if (!hostId) return;
     fetchDeviceData();
@@ -158,7 +168,6 @@ export default function ZabbixDeviceDetailPage() {
     }, 10000);
   };
 
-  // Fetch only latest values (for fallback)
   const fetchLatestData = async () => {
     if (!hostId) return;
     try {
@@ -203,7 +212,6 @@ export default function ZabbixDeviceDetailPage() {
     return null;
   };
 
-  // Full initial fetch (items + history)
   const fetchDeviceData = async () => {
     if (!hostId) return;
     setIsRefreshing(true);
@@ -221,7 +229,6 @@ export default function ZabbixDeviceDetailPage() {
           "memory.utilization",
         ]);
 
-        // Update device stats
         let updatedDevice = deviceRef.current;
         if (updatedDevice) {
           if (cpuItem?.lastvalue) {
@@ -235,7 +242,43 @@ export default function ZabbixDeviceDetailPage() {
           setDevice({ ...updatedDevice });
         }
 
-        // Fetch recent history (20 points) and filter out zero-only points
+        const uptimeItem = findItemByKey(data.data, [
+          "system.uptime",
+          "agent.uptime",
+        ]);
+        const tempItem = findItemByKey(data.data, [
+          "sensor.temp",
+          "hw.temp",
+          "temperature",
+        ]);
+        const pingItem = findItemByKey(data.data, [
+          "icmppingsec",
+          "icmpping",
+        ]);
+
+        let uptimeVal = 0;
+        let tempVal = 0;
+        let pingVal = 0;
+
+        if (uptimeItem?.lastvalue) {
+          const raw = parseFloat(uptimeItem.lastvalue);
+          if (!isNaN(raw)) uptimeVal = raw;
+        }
+        if (tempItem?.lastvalue) {
+          const raw = parseFloat(tempItem.lastvalue);
+          if (!isNaN(raw)) tempVal = raw;
+        }
+        if (pingItem?.lastvalue) {
+          const raw = parseFloat(pingItem.lastvalue);
+          if (!isNaN(raw)) pingVal = raw;
+        }
+
+        setExtraMetrics({
+          uptime: uptimeVal,
+          temperature: tempVal,
+          ping: pingVal,
+        });
+
         await fetchRecentHistory(cpuItem, memItem, 20);
         setLastUpdate(new Date());
       }
@@ -289,12 +332,10 @@ export default function ZabbixDeviceDetailPage() {
         }
       }
 
-      // Sort by time
       historyData.sort(
         (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
 
-      // Filter out points where both cpu and memory are 0
       const filtered = historyData.filter((p) => {
         const cpuValid = !isNaN(p.cpu) && p.cpu > 0;
         const memValid = !isNaN(p.memory) && p.memory > 0;
@@ -305,11 +346,9 @@ export default function ZabbixDeviceDetailPage() {
       setHistory(trimmed);
       historyRef.current = trimmed;
     } catch (err) {
-      // ignore
     }
   };
 
-  // Update from WebSocket or fallback (with spike protection)
   const updateDeviceData = (updatedDevice: any) => {
     if (!deviceRef.current) return;
     const newDevice = { ...deviceRef.current };
@@ -323,7 +362,6 @@ export default function ZabbixDeviceDetailPage() {
       newMem = updatedDevice.memory;
     }
 
-    // Spike protection
     if (newCpu === 0 && newDevice.cpu > 0) {
       newCpu = newDevice.cpu;
     }
@@ -342,7 +380,6 @@ export default function ZabbixDeviceDetailPage() {
     else newDevice.timestamp = new Date().toISOString();
     setDevice(newDevice);
 
-    // Add new point
     if (newCpu > 0 || newMem > 0) {
       const now = new Date();
       let ts = now.toISOString();
@@ -361,7 +398,6 @@ export default function ZabbixDeviceDetailPage() {
     }
   };
 
-  // ---- Ping handler ----
   const handlePing = async () => {
     if (!device) return;
     setPingModalOpen(true);
@@ -394,7 +430,6 @@ export default function ZabbixDeviceDetailPage() {
     setTimeout(() => setPingCopied(false), 2000);
   };
 
-  // ---- Format helpers ----
   const formatTime = (ts: string) => {
     try {
       return new Date(ts).toLocaleTimeString();
@@ -442,6 +477,13 @@ export default function ZabbixDeviceDetailPage() {
     return "normal";
   };
 
+  const formatUptime = (seconds: number) => {
+    if (seconds < 60) return `${Math.floor(seconds)} sec`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} min`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} h`;
+    return `${Math.floor(seconds / 86400)} d ${Math.floor((seconds % 86400) / 3600)} h`;
+  };
+
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -475,7 +517,6 @@ export default function ZabbixDeviceDetailPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-4">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
@@ -536,8 +577,7 @@ export default function ZabbixDeviceDetailPage() {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -586,10 +626,10 @@ export default function ZabbixDeviceDetailPage() {
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Traffic In</p>
-                <p className="text-2xl font-bold">{device.trafficIn} Mbps</p>
+                <p className="text-sm text-muted-foreground">Uptime</p>
+                <p className="text-2xl font-bold">{formatUptime(extraMetrics.uptime)}</p>
               </div>
-              <Network className="h-8 w-8 text-muted-foreground" />
+              <Clock className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -597,16 +637,30 @@ export default function ZabbixDeviceDetailPage() {
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Traffic Out</p>
-                <p className="text-2xl font-bold">{device.trafficOut} Mbps</p>
+                <p className="text-sm text-muted-foreground">Temperature</p>
+                <p className="text-2xl font-bold">
+                  {extraMetrics.temperature > 0 ? `${extraMetrics.temperature.toFixed(1)}°C` : "N/A"}
+                </p>
               </div>
-              <Network className="h-8 w-8 text-muted-foreground rotate-180" />
+              <Thermometer className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Ping Response</p>
+                <p className="text-2xl font-bold">
+                  {extraMetrics.ping > 0 ? `${(extraMetrics.ping * 1000).toFixed(1)} ms` : "N/A"}
+                </p>
+              </div>
+              <Network className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabs */}
       <div className="border rounded-lg overflow-hidden">
         <div className="flex border-b bg-muted/50">
           <button
@@ -635,15 +689,14 @@ export default function ZabbixDeviceDetailPage() {
           <div className="p-4 space-y-4">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              Real‑time updates via WebSocket{" "}
+              Real-time updates via WebSocket{" "}
               {isConnected ? "Connected" : "Connecting..."}
             </div>
 
-            {/* Combined Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Activity className="h-4 w-4" /> CPU & Memory Usage (Real‑time)
+                  <Activity className="h-4 w-4" /> CPU & Memory Usage (Real-time)
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -736,7 +789,6 @@ export default function ZabbixDeviceDetailPage() {
               </CardContent>
             </Card>
 
-            {/* CPU Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -773,7 +825,6 @@ export default function ZabbixDeviceDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Memory Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -888,10 +939,10 @@ export default function ZabbixDeviceDetailPage() {
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
                     {device.memory > 85
-                      ? "⚠️ High"
+                      ? "High"
                       : device.memory > 70
-                      ? "⚡ Moderate"
-                      : "✅ Normal"}
+                      ? "Moderate"
+                      : "Normal"}
                   </p>
                 </CardContent>
               </Card>
@@ -909,8 +960,7 @@ export default function ZabbixDeviceDetailPage() {
                     </span>
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Last updated:{" "}
-                    {new Date(device.timestamp).toLocaleString()}
+                    Last updated: {new Date(device.timestamp).toLocaleString()}
                   </p>
                   <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
                     <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
@@ -922,17 +972,25 @@ export default function ZabbixDeviceDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Network Traffic</CardTitle>
+                <CardTitle className="text-sm">Additional Metrics</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Inbound</p>
-                    <p className="text-2xl font-bold">{device.trafficIn} Mbps</p>
+                    <p className="text-sm text-muted-foreground">Uptime</p>
+                    <p className="text-xl font-bold">{formatUptime(extraMetrics.uptime)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Outbound</p>
-                    <p className="text-2xl font-bold">{device.trafficOut} Mbps</p>
+                    <p className="text-sm text-muted-foreground">Temperature</p>
+                    <p className="text-xl font-bold">
+                      {extraMetrics.temperature > 0 ? `${extraMetrics.temperature.toFixed(1)}°C` : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Ping Response</p>
+                    <p className="text-xl font-bold">
+                      {extraMetrics.ping > 0 ? `${(extraMetrics.ping * 1000).toFixed(1)} ms` : "N/A"}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -977,7 +1035,6 @@ export default function ZabbixDeviceDetailPage() {
         )}
       </div>
 
-      {/* Ping Modal */}
       {pingModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
