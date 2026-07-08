@@ -1,4 +1,3 @@
-// app/api/zabbix/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 const ZABBIX_URL = process.env.NEXT_PUBLIC_ZABBIX_URL || "http://172.24.192.57/zabbix";

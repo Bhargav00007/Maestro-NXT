@@ -1,11 +1,11 @@
-// app/api/ping/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { exec } from "child_process";
 import { promisify } from "util";
 
 const execPromise = promisify(exec);
 
-// Helper: call Zabbix API to get items
+
 async function fetchZabbixItem(hostId: string, itemKey: string) {
   try {
     const res = await fetch(
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // 1. Try to get ping data from Zabbix (if hostId provided)
+
   if (hostId) {
     try {
       const [pingStatus, pingSec] = await Promise.all([
@@ -53,17 +53,16 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // 2. Fallback to system ping
+
   try {
     const isWindows = process.platform === "win32";
     const count = isWindows ? "-n 4" : "-c 4";
-    const timeout = isWindows ? "-w 3000" : "-W 2"; // 3s timeout on Windows, 2s on Linux
+    const timeout = isWindows ? "-w 3000" : "-W 2"; 
     const command = `ping ${count} ${timeout} ${host}`;
     const { stdout, stderr } = await execPromise(command);
     const output = stdout + (stderr || "");
     return NextResponse.json({ output });
   } catch (error: any) {
-    // On failure, we still might have partial output
     return NextResponse.json(
       {
         error: error.message || "Ping failed",

@@ -1,7 +1,6 @@
 import { pusherServer } from "@/lib/pusher/server";
 import { NextResponse } from "next/server";
 
-// Your existing device data (keep all your existing devices)
 const devices = [
   // Singapore Region
   { id: "sg-rtr-01", name: "SG Core Router", ip: "10.1.0.1", type: "router", region: "singapore" },
@@ -62,9 +61,7 @@ function generateDeviceData() {
   });
 }
 
-// Compress data to fit within Pusher's 10KB limit
 function compressData(data: any[]) {
-  // Take only essential fields and limit number of items
   const essentialData = data.slice(0, 20).map(item => ({
     id: item.id,
     name: item.name,
@@ -83,16 +80,12 @@ function compressData(data: any[]) {
 
 export async function GET() {
   try {
-    // Generate local device data
     const localData = generateDeviceData();
     
-    // Compress the data to fit within Pusher limits
     const compressedData = compressData(localData);
     
-    // Push to Pusher
     await pusherServer.trigger("monitoring", "device-updates", compressedData);
     
-    // Also send full data via the response for the initial load
     return NextResponse.json({ 
       success: true, 
       data: localData,
@@ -103,7 +96,6 @@ export async function GET() {
   } catch (error: any) {
     console.error("Pusher trigger error:", error);
     
-    // If Pusher fails, still return the data for the initial load
     const localData = generateDeviceData();
     return NextResponse.json({ 
       success: true, 
