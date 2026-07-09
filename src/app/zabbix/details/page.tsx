@@ -41,6 +41,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import PingButton from "@/components/PingButton";
+import TracerouteButton from "@/components/TracerouteButton";
 
 interface DeviceDetail {
   id: string;
@@ -516,6 +517,8 @@ export default function ZabbixDeviceDetailPage() {
         <div className="flex items-center gap-3">
           {getStatusBadge()}
           <PingButton ip={device.ip} hostId={device.zabbixHostId} />
+                    <TracerouteButton ip={device.ip} hostId={device.zabbixHostId} />
+
           <Button
             variant="outline"
             size="sm"
