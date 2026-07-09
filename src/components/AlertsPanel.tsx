@@ -26,7 +26,7 @@ export default function AlertsPanel() {
       const data = await res.json();
       if (data.success && data.data) {
         const problems = data.data.filter((t: ZabbixTrigger) => t.value === "1");
-        problems.sort((a: { lastchange: string; }, b: { lastchange: string; }) => parseInt(b.lastchange) - parseInt(a.lastchange));
+        problems.sort((a: { lastchange: string }, b: { lastchange: string }) => parseInt(b.lastchange) - parseInt(a.lastchange));
         setZabbixProblems(problems);
       } else {
         setError("Failed to fetch Zabbix problems");
@@ -40,16 +40,25 @@ export default function AlertsPanel() {
   }, []);
 
   const getLocalAlerts = useCallback(() => {
-    const alerts: string[] = [];
+    const alerts: Array<{ message: string; priority: number }> = [];
     devices.forEach((d) => {
       if (d.status === "down") {
-        alerts.push(`${d.name} is DOWN`);
+        alerts.push({
+          message: `${d.name} is DOWN`,
+          priority: 1, // critical
+        });
       }
       if (d.cpu > 80) {
-        alerts.push(`${d.name} CPU high: ${d.cpu}%`);
+        alerts.push({
+          message: `${d.name} CPU high: ${d.cpu}%`,
+          priority: 2, // warning
+        });
       }
       if (d.memory > 85) {
-        alerts.push(`${d.name} Memory high: ${d.memory}%`);
+        alerts.push({
+          message: `${d.name} Memory high: ${d.memory}%`,
+          priority: 2, // warning
+        });
       }
     });
     return alerts;
@@ -87,11 +96,11 @@ export default function AlertsPanel() {
       priority: parseInt(trigger.priority, 10) || 0,
       lastchange: trigger.lastchange,
     })),
-    ...getLocalAlerts().map((msg, idx) => ({
+    ...getLocalAlerts().map((alert, idx) => ({
       id: `local-${idx}`,
-      message: msg,
+      message: alert.message,
       type: "local",
-      priority: 2,
+      priority: alert.priority,
       lastchange: Math.floor(Date.now() / 1000).toString(),
     })),
   ];
@@ -106,7 +115,9 @@ export default function AlertsPanel() {
       if (alert.priority >= 2) return "warning";
       return "info";
     }
-    return "warning";
+    // local alerts
+    if (alert.priority >= 4) return "warning";
+    return "critical";
   };
 
   const getAlertIcon = (alert: typeof allAlerts[0]) => {

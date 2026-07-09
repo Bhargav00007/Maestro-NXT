@@ -244,7 +244,7 @@ export default function ZabbixDeviceDetailPage() {
           "sensor.temp",
           "hw.temp",
           "temperature",
-          "sensor.temp.value[ciscoEnvMonTemperatureValue.2]",
+          "sensor.temp.value[ciscoEnvMonTemperatureValue.1]",
           "temp",
         ]);
         const pingItem = findItemByKey(data.data, [

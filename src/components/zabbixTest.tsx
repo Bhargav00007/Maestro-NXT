@@ -55,7 +55,6 @@ export default function ZabbixTest() {
       const zabbixUrl = process.env.NEXT_PUBLIC_ZABBIX_URL || "http://172.24.192.57/zabbix";
       const apiUrl = `${zabbixUrl}/api_jsonrpc.php`;
       
-      console.log("🔍 Testing Zabbix API with all possible formats...");
       
       const results: any = {
         apiUrl,
