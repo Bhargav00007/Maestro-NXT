@@ -34,16 +34,13 @@ import {
   RefreshCw,
   Zap,
   Gauge,
-  Terminal,
-  Copy,
-  Check,
-  X,
   Clock,
   Thermometer,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import PingButton from "@/components/PingButton";
 
 interface DeviceDetail {
   id: string;
@@ -104,12 +101,6 @@ export default function ZabbixDeviceDetailPage() {
   const historyRef = useRef<HistoryItem[]>([]);
   const deviceRef = useRef<DeviceDetail | null>(null);
   const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const [pingModalOpen, setPingModalOpen] = useState(false);
-  const [pingLoading, setPingLoading] = useState(false);
-  const [pingResult, setPingResult] = useState("");
-  const [pingError, setPingError] = useState<string | null>(null);
-  const [pingCopied, setPingCopied] = useState(false);
 
   useEffect(() => {
     deviceRef.current = device;
@@ -252,7 +243,7 @@ export default function ZabbixDeviceDetailPage() {
           "sensor.temp",
           "hw.temp",
           "temperature",
-          "sensor.temp.value[ciscoEnvMonTemperatureValue.4]",
+          "sensor.temp.value[ciscoEnvMonTemperatureValue.2]",
           "temp",
         ]);
         const pingItem = findItemByKey(data.data, [
@@ -349,8 +340,7 @@ export default function ZabbixDeviceDetailPage() {
       const trimmed = filtered.slice(-limit);
       setHistory(trimmed);
       historyRef.current = trimmed;
-    } catch (err) {
-    }
+    } catch (err) {}
   };
 
   const updateDeviceData = (updatedDevice: any) => {
@@ -400,38 +390,6 @@ export default function ZabbixDeviceDetailPage() {
         return trimmed;
       });
     }
-  };
-
-  const handlePing = async () => {
-    if (!device) return;
-    setPingModalOpen(true);
-    setPingLoading(true);
-    setPingResult("");
-    setPingError(null);
-    setPingCopied(false);
-
-    try {
-      const url = `/api/ping?host=${encodeURIComponent(device.ip)}&hostId=${encodeURIComponent(device.zabbixHostId || "")}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (res.ok) {
-        setPingResult(data.output || "No output");
-      } else {
-        setPingError(data.error || "Ping failed");
-        setPingResult(data.output || "");
-      }
-    } catch (err: any) {
-      setPingError(err.message || "Network error");
-    } finally {
-      setPingLoading(false);
-    }
-  };
-
-  const copyPingResult = async () => {
-    const text = pingResult || pingError || "";
-    await navigator.clipboard.writeText(text);
-    setPingCopied(true);
-    setTimeout(() => setPingCopied(false), 2000);
   };
 
   const formatTime = (ts: string) => {
@@ -522,6 +480,7 @@ export default function ZabbixDeviceDetailPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-4">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
@@ -556,15 +515,7 @@ export default function ZabbixDeviceDetailPage() {
         </div>
         <div className="flex items-center gap-3">
           {getStatusBadge()}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePing}
-            className="flex items-center gap-1"
-          >
-            <Terminal className="h-4 w-4" />
-            Ping
-          </Button>
+          <PingButton ip={device.ip} hostId={device.zabbixHostId} />
           <Button
             variant="outline"
             size="sm"
@@ -582,6 +533,7 @@ export default function ZabbixDeviceDetailPage() {
         </div>
       </div>
 
+      {/* Quick Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="pt-4">
@@ -666,6 +618,7 @@ export default function ZabbixDeviceDetailPage() {
         </Card>
       </div>
 
+      {/* Tabs */}
       <div className="border rounded-lg overflow-hidden">
         <div className="flex border-b bg-muted/50">
           <button
@@ -1039,72 +992,6 @@ export default function ZabbixDeviceDetailPage() {
           </div>
         )}
       </div>
-
-      {pingModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setPingModalOpen(false)}
-        >
-          <div
-            className="bg-background rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Terminal className="h-5 w-5" />
-                Ping Result for {device.ip}
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setPingModalOpen(false)}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="flex-1 overflow-auto p-4">
-              {pingLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                  <span className="ml-2">Pinging...</span>
-                </div>
-              ) : (
-                <pre className="bg-muted/30 p-4 rounded-md text-sm font-mono whitespace-pre-wrap break-words max-h-60 overflow-auto">
-                  {pingResult || pingError || "No output"}
-                </pre>
-              )}
-              {pingError && !pingLoading && (
-                <p className="text-red-500 text-sm mt-2">Error: {pingError}</p>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 p-4 border-t">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={copyPingResult}
-                disabled={pingLoading || (!pingResult && !pingError)}
-                className="flex items-center gap-1"
-              >
-                {pingCopied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-                {pingCopied ? "Copied" : "Copy"}
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => setPingModalOpen(false)}
-              >
-                OK
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -46,22 +46,22 @@ function HomeContent() {
         >
           <div className="flex flex-col gap-3 lg:gap-6 lg:grid lg:grid-cols-[3fr_1fr]">
             <div className="h-[400px] sm:h-[500px] lg:h-[400px] min-h-0">
-              <div className="h-full rounded-lg border shadow-md overflow-auto bg-card">
+              <div className="h-full rounded-lg border border-gray-300 shadow-md overflow-auto bg-card">
                 <WorldMap />
               </div>
             </div>
             
             <div className="h-[300px] sm:h-[350px] lg:h-[400px] min-h-0">
-              <div className="h-full rounded-lg border shadow-md overflow-auto bg-card">
+              <div className="h-full rounded-lg border border-gray-300  shadow-md overflow-auto bg-card">
                 <AlertsPanel />
               </div>
             </div>
           </div>
 
-          <div className="rounded-lg border shadow-md overflow-hidden bg-card p-4">
+          <div className="rounded-lg border border-gray-300  shadow-md overflow-hidden bg-card p-4">
             <DashboardCards />
           </div>
-          <div className="rounded-lg border shadow-md overflow-hidden bg-card p-4">
+          <div className="rounded-lg border border-gray-300  shadow-md overflow-hidden bg-card p-4">
             <RegionCards />
           </div>
         </div>

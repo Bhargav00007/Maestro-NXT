@@ -110,7 +110,7 @@ export default function DeviceCard({ device, history }: DeviceCardProps) {
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow border border-gray-300 ">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-2 min-w-0">
           <div className={`${getDeviceTypeColor()}`}>{getDeviceIcon()}</div>

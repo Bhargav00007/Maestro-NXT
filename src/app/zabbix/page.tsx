@@ -6,8 +6,6 @@ import { useDeviceStore } from "@/lib/store";
 import {
   Loader2,
   Server,
-  Cpu,
-  MemoryStick,
   Activity,
   AlertTriangle,
   RefreshCw,
@@ -29,7 +27,6 @@ export default function ZabbixPage() {
   const devices = useDeviceStore((state) => state.devices);
   const [error, setError] = useState<string | null>(null);
 
-  // Show all devices (they are all from Zabbix)
   const zabbixDevices = devices;
 
   const getStatusBadge = (status?: string) => {
@@ -69,7 +66,7 @@ export default function ZabbixPage() {
       case "storage":
         return <HardDrive className="h-5 w-5" />;
       case "loadbalancer":
-        return <Activity className="h-5 w-5" />;
+        return <Box className="h-5 w-5" />;
       default:
         return <Box className="h-5 w-5" />;
     }

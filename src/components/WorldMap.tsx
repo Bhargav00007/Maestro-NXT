@@ -133,7 +133,7 @@ export default function WorldMap() {
 
   return (
     <div className="flex h-full w-full items-center justify-center overflow-hidden bg-background relative">
-      <div className="h-full w-full overflow-hidden rounded-lg border bg-background shadow-sm">
+      <div className="h-full w-full overflow-hidden rounded-lg border-black bg-background shadow-sm">
         <Map
           ref={mapRef}
           center={[hub.lng, hub.lat]}

@@ -68,7 +68,7 @@ export default function ZabbixPage() {
       case "storage":
         return <HardDrive className="h-5 w-5" />;
       case "loadbalancer":
-        return <Activity className="h-5 w-5" />;
+        return <Box className="h-5 w-5" />;
       default:
         return <Box className="h-5 w-5" />;
     }

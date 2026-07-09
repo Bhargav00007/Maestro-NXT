@@ -45,7 +45,7 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
   };
 
   return (
-    <div className="rounded-lg border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div className="rounded-lg border border-gray-300 bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className={`rounded-full p-2 ${color}`}>
@@ -58,9 +58,9 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
         </div>
         <button
           onClick={() => router.push(path)}
-          className="text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded border hover:border-primary"
+          className="text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded border border-gray-500 hover:border-primary"
         >
-          View →
+          View 
         </button>
       </div>
 
@@ -131,7 +131,7 @@ export default function RegionCards() {
       path: "/culpepper"
     },
     plainsboro: {
-      title: "Plainsboro",   // no "Data Center"
+      title: "Plainsboro",   
       region: "plainsboro",
       color: "bg-purple-100 text-purple-600",
       icon: <Database className="h-4 w-4" />,
@@ -148,7 +148,6 @@ export default function RegionCards() {
     }
   };
 
-  // (Optional) you can still show default devices if any
   const defaultDevices = devices.filter(d => d.region === "default");
   const hasDefaultDevices = defaultDevices.length > 0;
 

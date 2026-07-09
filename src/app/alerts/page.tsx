@@ -89,7 +89,6 @@ export default function AlertsPage() {
       const data = await res.json();
       console.log("History API response:", data); // debug
       if (data.success && data.data) {
-        // Sort by clock descending (latest first)
         const events = data.data.sort((a: ZabbixEvent, b: ZabbixEvent) => parseInt(b.clock) - parseInt(a.clock));
         return events;
       }
@@ -238,27 +237,6 @@ export default function AlertsPage() {
     return <Bell className="h-4 w-4" />;
   };
 
-  // Helper: render message with host bold on first line, rest on next
-  const renderMessage = (message: string, hostName?: string) => {
-    let host = hostName || "Unknown";
-    let rest = message;
-    if (message.startsWith(host + ":")) {
-      rest = message.substring(host.length + 1).trim();
-    } else if (message.includes(":")) {
-      const parts = message.split(":");
-      if (parts.length > 1) {
-        host = parts[0].trim();
-        rest = parts.slice(1).join(":").trim();
-      }
-    }
-    return (
-      <div className="flex flex-col">
-        <span className="font-bold text-sm">{host}</span>
-        <span className="text-xs text-muted-foreground">{rest}</span>
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -332,9 +310,11 @@ export default function AlertsPage() {
                 <div className="space-y-3">
                   {activeAlerts.map((alert) => {
                     const isLocal = 'type' in alert && alert.type === 'local';
+                    // Host name: use the provided host from the alert data
                     const hostName = isLocal
                       ? (alert as LocalAlert).host || 'Unknown'
                       : (alert as ZabbixTrigger).hosts?.[0]?.name || (alert as ZabbixTrigger).hosts?.[0]?.host || 'Unknown';
+                    // Description: full description (without stripping host)
                     const description = isLocal
                       ? (alert as LocalAlert).message
                       : (alert as ZabbixTrigger).description;
@@ -362,7 +342,11 @@ export default function AlertsPage() {
                         <div className="flex items-start gap-3">
                           {getAlertIcon(alert)}
                           <div>
-                            {renderMessage(description, hostName)}
+                            {/* Device name in bold, description on next line */}
+                            <div className="flex flex-col">
+                              <span className="font-bold text-sm">{hostName}</span>
+                              <span className="text-xs text-muted-foreground">{description}</span>
+                            </div>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
                               <span className={cn("px-1.5 py-0.5 rounded-full text-white text-[10px]", priorityInfo.color)}>
                                 {priorityInfo.label}

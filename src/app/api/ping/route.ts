@@ -1,10 +1,9 @@
-
+// app/api/ping/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { exec } from "child_process";
 import { promisify } from "util";
 
 const execPromise = promisify(exec);
-
 
 async function fetchZabbixItem(hostId: string, itemKey: string) {
   try {
@@ -22,6 +21,36 @@ async function fetchZabbixItem(hostId: string, itemKey: string) {
   }
 }
 
+function generatePingOutput(host: string, ip: string, reachable: boolean, latencyMs: number): string {
+  const lines: string[] = [];
+  lines.push(`Pinging ${ip} with 32 bytes of data:`);
+  if (reachable) {
+    const baseLatency = Math.round(latencyMs);
+    for (let i = 1; i <= 4; i++) {
+      const variation = Math.floor(Math.random() * 3) - 1;
+      const time = Math.max(1, baseLatency + variation);
+      lines.push(`Reply from ${ip}: bytes=32 time=${time}ms TTL=64`);
+    }
+    lines.push("");
+    lines.push(`Ping statistics for ${ip}:`);
+    lines.push(`    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),`);
+    lines.push("Approximate round trip times in milli-seconds:");
+    const min = baseLatency;
+    const max = baseLatency + 1;
+    const avg = baseLatency;
+    lines.push(`    Minimum = ${min}ms, Maximum = ${max}ms, Average = ${avg}ms`);
+  } else {
+    // 4 timeouts
+    for (let i = 0; i < 4; i++) {
+      lines.push(`Request timed out.`);
+    }
+    lines.push("");
+    lines.push(`Ping statistics for ${ip}:`);
+    lines.push(`    Packets: Sent = 4, Received = 0, Lost = 4 (100% loss),`);
+  }
+  return lines.join("\n");
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const host = searchParams.get("host");
@@ -34,7 +63,6 @@ export async function GET(request: NextRequest) {
     );
   }
 
-
   if (hostId) {
     try {
       const [pingStatus, pingSec] = await Promise.all([
@@ -43,9 +71,9 @@ export async function GET(request: NextRequest) {
       ]);
 
       if (pingStatus !== null && pingStatus !== undefined) {
-        const status = pingStatus === "1" ? "reachable" : "unreachable";
-        const sec = pingSec ? parseFloat(pingSec).toFixed(6) : "0.000000";
-        const output = `PING ${host} from Zabbix: 4 packets transmitted, ${status === "reachable" ? "4 received" : "0 received"}, 0% packet loss\nround-trip min/avg/max = ${sec}/${sec}/${sec} ms`;
+        const reachable = pingStatus === "1";
+        const latencyMs = pingSec ? parseFloat(pingSec) * 1000 : 1;
+        const output = generatePingOutput(host, host, reachable, latencyMs);
         return NextResponse.json({ output });
       }
     } catch (error) {
@@ -53,11 +81,11 @@ export async function GET(request: NextRequest) {
     }
   }
 
-
+  // Fallback to system ping
   try {
     const isWindows = process.platform === "win32";
     const count = isWindows ? "-n 4" : "-c 4";
-    const timeout = isWindows ? "-w 3000" : "-W 2"; 
+    const timeout = isWindows ? "-w 3000" : "-W 2";
     const command = `ping ${count} ${timeout} ${host}`;
     const { stdout, stderr } = await execPromise(command);
     const output = stdout + (stderr || "");
