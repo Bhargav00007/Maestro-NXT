@@ -45,13 +45,13 @@ export default function AlertsPanel() {
       if (d.status === "down") {
         alerts.push({
           message: `${d.name} is DOWN`,
-          priority: 1, 
+          priority: 1,
         });
       }
       if (d.cpu > 80) {
         alerts.push({
           message: `${d.name} CPU high: ${d.cpu}%`,
-          priority: 2, 
+          priority: 2,
         });
       }
       if (d.memory > 85) {
@@ -89,13 +89,19 @@ export default function AlertsPanel() {
   };
 
   const allAlerts = [
-    ...zabbixProblems.map((trigger) => ({
-      id: trigger.triggerid,
-      message: `${trigger.hosts?.[0]?.name || trigger.hosts?.[0]?.host || "Unknown"}: ${trigger.description}`,
-      type: "zabbix",
-      priority: parseInt(trigger.priority, 10) || 0,
-      lastchange: trigger.lastchange,
-    })),
+    ...zabbixProblems.map((trigger) => {
+      const hostName = trigger.hosts?.[0]?.name || trigger.hosts?.[0]?.host || "Unknown";
+      let description = trigger.description;
+      description = description.replace(/\{HOST\.NAME\}/g, hostName);
+      description = description.replace(/\{HOST\.HOST\}/g, hostName);
+      return {
+        id: trigger.triggerid,
+        message: `${hostName}: ${description}`,
+        type: "zabbix",
+        priority: parseInt(trigger.priority, 10) || 0,
+        lastchange: trigger.lastchange,
+      };
+    }),
     ...getLocalAlerts().map((alert, idx) => ({
       id: `local-${idx}`,
       message: alert.message,
@@ -127,17 +133,28 @@ export default function AlertsPanel() {
 
   const renderMessage = (message: string) => {
     const colonIndex = message.indexOf(":");
-    if (colonIndex === -1) {
-      return <span className="text-xs sm:text-sm">{message}</span>;
+    if (colonIndex !== -1) {
+      const host = message.substring(0, colonIndex).trim();
+      const rest = message.substring(colonIndex + 1).trim();
+      return (
+        <div className="flex flex-col">
+          <strong className="text-xs sm:text-sm">{host}</strong>
+          <span className="text-[10px] sm:text-xs text-muted-foreground">{rest}</span>
+        </div>
+      );
     }
-    const host = message.substring(0, colonIndex).trim();
-    const rest = message.substring(colonIndex + 1).trim();
-    return (
-      <div className="flex flex-col">
-        <strong className="text-xs sm:text-sm">{host}</strong>
-        <span className="text-[10px] sm:text-xs text-muted-foreground">{rest}</span>
-      </div>
-    );
+    const isIndex = message.indexOf(" is ");
+    if (isIndex !== -1) {
+      const host = message.substring(0, isIndex).trim();
+      const rest = message.substring(isIndex + 10).trim();
+      return (
+        <div className="flex flex-col">
+          <strong className="text-xs sm:text-sm">{host}</strong>
+          <span className="text-[10px] sm:text-xs text-muted-foreground"> is {rest}</span>
+        </div>
+      );
+    }
+    return <span className="text-xs sm:text-sm">{message}</span>;
   };
 
   return (
