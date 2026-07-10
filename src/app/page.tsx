@@ -65,7 +65,8 @@ function HomeContent() {
             <DashboardCards />
           </div>
           <div className="rounded-lg border border-gray-300  shadow-md overflow-hidden bg-card p-4">
-<RegionHealthPieCharts/>        </div>
+            <RegionHealthPieCharts />
+          </div>
           <div className="rounded-lg border border-gray-300  shadow-md overflow-hidden bg-card p-4">
             <RegionCards />
           </div>
