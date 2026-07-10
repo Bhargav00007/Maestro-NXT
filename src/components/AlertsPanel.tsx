@@ -45,19 +45,19 @@ export default function AlertsPanel() {
       if (d.status === "down") {
         alerts.push({
           message: `${d.name} is DOWN`,
-          priority: 1, // critical
+          priority: 1, 
         });
       }
       if (d.cpu > 80) {
         alerts.push({
           message: `${d.name} CPU high: ${d.cpu}%`,
-          priority: 2, // warning
+          priority: 2, 
         });
       }
       if (d.memory > 85) {
         alerts.push({
           message: `${d.name} Memory high: ${d.memory}%`,
-          priority: 2, // warning
+          priority: 2,
         });
       }
     });
@@ -115,7 +115,6 @@ export default function AlertsPanel() {
       if (alert.priority >= 2) return "warning";
       return "info";
     }
-    // local alerts
     if (alert.priority >= 4) return "warning";
     return "critical";
   };

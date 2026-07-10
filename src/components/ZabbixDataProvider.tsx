@@ -42,7 +42,6 @@ function getRegionFromName(name: string): string {
   return "default";
 }
 
-// Helper: Zabbix JSON‑RPC request
 async function zabbixRequest(method: string, params: any = {}, token?: string) {
   const body: any = {
     jsonrpc: "2.0",
@@ -73,13 +72,11 @@ export default function ZabbixDataProvider({
 
   const fetchZabbixData = async () => {
     try {
-      // 1. Login to get auth token
       const authToken = await zabbixRequest("user.login", {
         username: USER,
         password: PASSWORD,
       });
 
-      // 2. Get hosts with items (including uptime/ICMP)
       const hosts = await zabbixRequest(
         "host.get",
         {
@@ -104,7 +101,6 @@ export default function ZabbixDataProvider({
         const devices = hosts.map((host: ZabbixHost) => {
           const items = host.items || [];
 
-          // ---- CPU ----
           let cpu = 0;
           let cpuUnits = "%";
           const cpuItem = items.find(
@@ -118,7 +114,6 @@ export default function ZabbixDataProvider({
             cpuUnits = cpuItem.units || "%";
           }
 
-          // ---- Memory ----
           let memory = 0;
           let memoryUnits = "%";
           const memItem = items.find(
@@ -132,12 +127,10 @@ export default function ZabbixDataProvider({
             memoryUnits = memItem.units || "%";
           }
 
-          // ---- ICMP Ping (primary) ----
           const pingItem = items.find(
             (item) => item.key_ === "icmpping" || item.key_.includes("icmpping")
           );
 
-          // ---- Uptime (fallback) ----
           const uptimeItem = items.find(
             (item) =>
               item.key_ === "system.uptime" ||
@@ -146,32 +139,24 @@ export default function ZabbixDataProvider({
               item.key_.includes("uptime")
           );
 
-          // ---- Agent availability ----
           const agentItem = items.find(
             (item) => item.key_ === "zabbix[host,agent,available]"
           );
 
-          // ---- Determine status (default offline) ----
           let isUp = false;
 
           if (pingItem?.lastvalue !== undefined) {
             isUp = pingItem.lastvalue === "1";
-            console.log(`📡 ${host.name}: icmpping = ${pingItem.lastvalue} → ${isUp ? "ONLINE" : "OFFLINE"}`);
           } else if (uptimeItem?.lastvalue !== undefined) {
             const uptime = parseFloat(uptimeItem.lastvalue);
             isUp = uptime > 0;
-            console.log(`📡 ${host.name}: uptime = ${uptime} → ${isUp ? "ONLINE" : "OFFLINE"}`);
           } else if (host.available !== undefined && host.available !== null) {
             isUp = host.available === "0";
-            console.log(`📡 ${host.name}: available = ${host.available} → ${isUp ? "ONLINE" : "OFFLINE"}`);
           } else if (agentItem?.lastvalue !== undefined) {
             isUp = agentItem.lastvalue === "1";
-            console.log(`📡 ${host.name}: agent = ${agentItem.lastvalue} → ${isUp ? "ONLINE" : "OFFLINE"}`);
           } else {
-            console.log(`📡 ${host.name}: no status data → OFFLINE (default)`);
           }
 
-          // ---- Traffic (example) ----
           let trafficIn = 0;
           let trafficOut = 0;
           const netInItem = items.find(
@@ -187,7 +172,6 @@ export default function ZabbixDataProvider({
             trafficOut = Math.round(parseFloat(netOutItem.lastvalue) / 1000000);
           }
 
-          // ---- Device type ----
           let type = "server";
           const name = (host.name || host.host).toLowerCase();
           if (name.includes("router") || name.includes("rtr")) type = "router";
@@ -198,10 +182,8 @@ export default function ZabbixDataProvider({
           else if (name.includes("database") || name.includes("db")) type = "database";
           else if (name.includes("mpls")) type = "router";
 
-          // ---- Region ----
           const region = getRegionFromName(host.name || host.host);
 
-          // ---- IP ----
           let ip = host.host;
           if (host.interfaces && host.interfaces.length > 0) {
             ip = host.interfaces[0].ip || host.host;
@@ -229,11 +211,8 @@ export default function ZabbixDataProvider({
 
         const upCount = devices.filter((d: { status: string }) => d.status === "up").length;
         const downCount = devices.filter((d: { status: string }) => d.status === "down").length;
-        console.log(
-          `✅ Loaded ${devices.length} devices (${upCount} UP, ${downCount} DOWN)`
-        );
+    
       } else {
-        console.log("ℹ️ No hosts found in Zabbix");
       }
     } catch (error) {
       console.error("❌ Failed to fetch Zabbix data:", error);

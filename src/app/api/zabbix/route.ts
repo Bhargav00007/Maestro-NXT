@@ -5,7 +5,6 @@ const API_URL = `${ZABBIX_URL}/api_jsonrpc.php`;
 const USER = process.env.ZABBIX_USER || "Admin";
 const PASSWORD = process.env.ZABBIX_PASSWORD || "zabbix";
 
-// ─── Zabbix API request helper ──────────────────────────────────────────────
 async function zabbixRequest(method: string, params: any = {}, token?: string) {
   const body: any = {
     jsonrpc: "2.0",
@@ -25,7 +24,6 @@ async function zabbixRequest(method: string, params: any = {}, token?: string) {
   return data.result;
 }
 
-// ─── Get authentication token ──────────────────────────────────────────────
 async function getAuthToken() {
   try {
     return await zabbixRequest("user.login", {
@@ -38,7 +36,6 @@ async function getAuthToken() {
   }
 }
 
-// ─── Main GET handler ──────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -53,7 +50,6 @@ export async function GET(request: NextRequest) {
     let result;
 
     switch (action) {
-      // ─── Hosts (with all items) ──────────────────────────────────────────
       case "hosts": {
         result = await zabbixRequest(
           "host.get",
@@ -77,7 +73,6 @@ export async function GET(request: NextRequest) {
         break;
       }
 
-      // ─── Items for a specific host ──────────────────────────────────────
       case "items": {
         if (!hostId) {
           return NextResponse.json(
@@ -98,7 +93,6 @@ export async function GET(request: NextRequest) {
         break;
       }
 
-      // ─── History for a given item ──────────────────────────────────────
       case "history": {
         if (!itemId) {
           return NextResponse.json(
@@ -126,7 +120,7 @@ export async function GET(request: NextRequest) {
               historyData = data;
               break;
             }
-          } catch (e) { /* ignore */ }
+          } catch (e) { }
         }
         if (!historyData) {
           historyData = await zabbixRequest(
@@ -139,7 +133,6 @@ export async function GET(request: NextRequest) {
         break;
       }
 
-      // ─── Triggers ────────────────────────────────────────────────────────
       case "triggers": {
         const params: any = {
           output: ["triggerid", "description", "priority", "status", "value", "lastchange"],
@@ -155,7 +148,6 @@ export async function GET(request: NextRequest) {
         break;
       }
 
-      // ─── Problems ────────────────────────────────────────────────────────
       case "problems": {
         const params: any = {
           output: ["triggerid", "description", "priority", "status", "value", "lastchange"],
@@ -171,7 +163,6 @@ export async function GET(request: NextRequest) {
         break;
       }
 
-      // ─── Events ──────────────────────────────────────────────────────────
       case "events": {
         const params: any = {
           output: ["eventid", "source", "object", "objectid", "clock", "value", "acknowledged", "ns"],
@@ -187,7 +178,6 @@ export async function GET(request: NextRequest) {
         break;
       }
 
-      // ─── Graph details ──────────────────────────────────────────────────
       case "graph": {
         if (!graphId) {
           return NextResponse.json(
@@ -207,7 +197,6 @@ export async function GET(request: NextRequest) {
         break;
       }
 
-      // ─── NEW: ICMP Ping Response Time (enhanced) ──────────────────────
       case "icmp": {
         if (!hostId) {
           return NextResponse.json(
@@ -216,7 +205,6 @@ export async function GET(request: NextRequest) {
           );
         }
 
-        // If an itemId is given, fetch that specific item
         if (itemId) {
           const items = await zabbixRequest(
             "item.get",
@@ -246,7 +234,6 @@ export async function GET(request: NextRequest) {
           break;
         }
 
-        // Otherwise, search for ICMP-related items (multiple keys)
         const itemKeys = ["icmppingsec", "icmpping", "icmppingloss"];
         const items = await zabbixRequest(
           "item.get",
@@ -266,7 +253,6 @@ export async function GET(request: NextRequest) {
           );
         }
 
-        // Return all found ICMP items with parsed values
         result = items.map((item: any) => ({
           hostId,
           itemId: item.itemid,

@@ -1,4 +1,3 @@
-// lib/store.ts
 import { create } from 'zustand';
 
 export interface Device {
@@ -40,4 +39,4 @@ export const useDeviceStore = create<DeviceStore>((set) => ({
     set((state) => ({
       devices: state.devices.filter((d) => d.id !== id),
     })),
-}));
+})); 
