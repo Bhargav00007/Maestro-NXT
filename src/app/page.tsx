@@ -7,6 +7,7 @@ import AlertsPanel from "@/components/AlertsPanel";
 import RegionCards from "@/components/regionCards";
 import { cn } from "@/lib/utils";
 import DashboardStats from "@/components/DashboardStats";
+import RegionHealthPieCharts from "@/components/DashboardCharts";
 
 function HomeContent() {
   const { state } = useSidebar();
@@ -63,6 +64,8 @@ function HomeContent() {
           <div className="rounded-lg border border-gray-300  shadow-md overflow-hidden bg-card p-4">
             <DashboardCards />
           </div>
+          <div className="rounded-lg border border-gray-300  shadow-md overflow-hidden bg-card p-4">
+<RegionHealthPieCharts/>        </div>
           <div className="rounded-lg border border-gray-300  shadow-md overflow-hidden bg-card p-4">
             <RegionCards />
           </div>

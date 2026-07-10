@@ -146,7 +146,7 @@ export default function AlertsPanel() {
     const isIndex = message.indexOf(" is ");
     if (isIndex !== -1) {
       const host = message.substring(0, isIndex).trim();
-      const rest = message.substring(isIndex + 10).trim();
+      const rest = message.substring(isIndex + 4).trim();
       return (
         <div className="flex flex-col">
           <strong className="text-xs sm:text-sm">{host}</strong>
