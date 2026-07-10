@@ -6,6 +6,7 @@ import DashboardCards from "@/components/DashboardCards";
 import AlertsPanel from "@/components/AlertsPanel";
 import RegionCards from "@/components/regionCards";
 import { cn } from "@/lib/utils";
+import DashboardStats from "@/components/DashboardStats";
 
 function HomeContent() {
   const { state } = useSidebar();
@@ -57,7 +58,8 @@ function HomeContent() {
               </div>
             </div>
           </div>
-
+<div className="rounded-lg border border-gray-300  shadow-md overflow-hidden bg-card p-4">
+<DashboardStats/>          </div>
           <div className="rounded-lg border border-gray-300  shadow-md overflow-hidden bg-card p-4">
             <DashboardCards />
           </div>

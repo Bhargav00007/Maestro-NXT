@@ -189,10 +189,7 @@ export default function DeviceCard({ device, history }: DeviceCardProps) {
           </div>
         </div>
 
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>In: {device.trafficIn} Mbps</span>
-          <span>Out: {device.trafficOut} Mbps</span>
-        </div>
+        
 
         {history.length > 1 && (
           <div className="h-16 w-full">
