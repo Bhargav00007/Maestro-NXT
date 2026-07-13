@@ -166,13 +166,7 @@ export default function RegionCards() {
         ))}
       </div>
 
-      {hasDefaultDevices && (
-        <div className="mt-2 p-3 rounded-lg border border-dashed bg-muted/50">
-          <p className="text-xs text-muted-foreground">
-            Unclassified devices: {defaultDevices.length} device(s) – check naming.
-          </p>
-        </div>
-      )}
+     
     </div>
   );
 }

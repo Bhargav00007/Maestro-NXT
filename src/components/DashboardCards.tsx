@@ -44,11 +44,21 @@ export default function DashboardCards() {
 
   const allDevices = devices;
 
-  const visibleDevices = allDevices.slice(0, visibleCount);
-  const hasMore = visibleCount < allDevices.length;
+  const sortedDevices = [...allDevices].sort((a, b) => {
+    const aName = a.name.toUpperCase();
+    const bName = b.name.toUpperCase();
+    const aIsBottom = aName.includes("CSW") || aName.includes("ASW");
+    const bIsBottom = bName.includes("CSW") || bName.includes("ASW");
+    if (aIsBottom && !bIsBottom) return 1;
+    if (!aIsBottom && bIsBottom) return -1;
+    return 0;
+  });
+
+  const visibleDevices = sortedDevices.slice(0, visibleCount);
+  const hasMore = visibleCount < sortedDevices.length;
 
   const loadMore = () => {
-    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, allDevices.length));
+    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, sortedDevices.length));
   };
 
   if (devices.length === 0) {
@@ -100,7 +110,7 @@ export default function DashboardCards() {
             className="flex items-center gap-2"
           >
             <ChevronDown className="h-4 w-4" />
-            Load More ({Math.min(PAGE_SIZE, allDevices.length - visibleCount)} remaining)
+            Load More ({Math.min(PAGE_SIZE, sortedDevices.length - visibleCount)} remaining)
           </Button>
         </div>
       )}
