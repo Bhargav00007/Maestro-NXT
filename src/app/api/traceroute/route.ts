@@ -1,74 +1,116 @@
-// app/api/traceroute/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { exec } from "child_process";
-import { promisify } from "util";
 
-const execPromise = promisify(exec);
-
-// Helper: fetch item value from Zabbix
 async function fetchZabbixTraceroute(hostId: string, targetIp: string) {
   try {
-    // Build the expected item key – you can adjust this to match your Zabbix item key pattern
     const itemKey = `custom.traceroute[${targetIp}]`;
+
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/zabbix?action=items&hostId=${hostId}`
+      `${
+        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+      }/api/zabbix?action=items&hostId=${hostId}`,
+      {
+        cache: "no-store",
+      }
     );
+
     const data = await res.json();
+
     if (data.success && data.data) {
       const item = data.data.find((i: any) => i.key_ === itemKey);
-      if (item && item.lastvalue) {
+
+      if (item?.lastvalue) {
         return item.lastvalue;
       }
     }
+
     return null;
-  } catch (error) {
-    console.warn("Failed to fetch Zabbix traceroute item:", error);
+  } catch (err) {
+    console.warn("Failed to fetch traceroute from Zabbix:", err);
     return null;
+  }
+}
+
+async function fetchTracerouteFromVM(host: string) {
+  try {
+    const vmUrl =
+      process.env.TRACEROUTE_API_URL ||
+      "http://172.24.192.57:5050";
+
+    const res = await fetch(
+      `${vmUrl}/traceroute?host=${encodeURIComponent(host)}`,
+      {
+        cache: "no-store",
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error(`VM returned ${res.status}`);
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.error("Failed to contact VM:", err);
+    throw err;
   }
 }
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
+
   const host = searchParams.get("host");
   const hostId = searchParams.get("hostId");
 
   if (!host) {
     return NextResponse.json(
-      { error: "Host parameter is required" },
-      { status: 400 }
+      {
+        error: "Host parameter is required",
+      },
+      {
+        status: 400,
+      }
     );
   }
 
-  // 1. Try to get traceroute from Zabbix (if hostId is provided)
+  /**
+   * STEP 1
+   * Try reading an existing traceroute item from Zabbix
+   */
   if (hostId) {
     try {
       const zabbixOutput = await fetchZabbixTraceroute(hostId, host);
+
       if (zabbixOutput) {
-        return NextResponse.json({ output: zabbixOutput });
+        return NextResponse.json({
+          source: "zabbix-item",
+          output: zabbixOutput,
+        });
       }
-    } catch (error) {
-      console.warn("Zabbix traceroute fetch failed, falling back to system traceroute", error);
+    } catch (err) {
+      console.warn("Unable to fetch traceroute item from Zabbix:", err);
     }
   }
 
-  // 2. Fallback to system traceroute (from the Next.js server)
+  /**
+   * STEP 2
+   * No Zabbix item exists.
+   * Execute traceroute FROM THE UBUNTU VM.
+   */
   try {
-    const isWindows = process.platform === "win32";
-    const command = isWindows
-      ? `tracert -d -h 30 ${host}`
-      : `traceroute -n -m 30 ${host}`;
-    const { stdout, stderr } = await execPromise(command, { timeout: 60000 });
-    const output = stdout + (stderr || "");
-    // Even if stderr has warnings, we return success
-    return NextResponse.json({ output });
-  } catch (error: any) {
-    const output = error.stdout || "";
+    const result = await fetchTracerouteFromVM(host);
+
+    return NextResponse.json({
+      source: "ubuntu-vm",
+      output: result.output,
+    });
+  } catch (err: any) {
     return NextResponse.json(
       {
-        output: output || `Error: ${error.message}`,
-        warning: "Traceroute completed with errors (some hops may have timed out).",
+        error: "Unable to execute traceroute on Ubuntu VM.",
+        details: err.message,
       },
-      { status: 200 }
+      {
+        status: 500,
+      }
     );
   }
 }
