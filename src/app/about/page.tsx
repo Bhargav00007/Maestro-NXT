@@ -179,7 +179,7 @@ const About = () => {
             </ul>
           </div>
 
-          <div className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-blue-50 to-cyan-50">
+          <div className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow ">
             <h3 className="text-xl font-semibold text-green-600">
               Why This Stack?
             </h3>

@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-// Types
 interface ZabbixTrigger {
   triggerid: string;
   description: string;
@@ -36,7 +35,7 @@ interface ZabbixEvent {
   object: string;
   objectid: string;
   clock: string;
-  value: string; // 0 = OK, 1 = PROBLEM
+  value: string; 
   acknowledged: string;
   hosts?: Array<{ hostid: string; host: string; name?: string }>;
   triggers?: Array<{
@@ -53,7 +52,7 @@ interface LocalAlert {
   type: "local";
   priority: number;
   host?: string;
-  timestamp: number; // for sorting
+  timestamp: number; 
 }
 
 export default function AlertsPage() {
@@ -65,7 +64,6 @@ export default function AlertsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch active triggers (problems) from Zabbix
   const fetchActiveTriggers = useCallback(async () => {
     try {
       const res = await fetch("/api/zabbix?action=problems");
@@ -82,7 +80,6 @@ export default function AlertsPage() {
     }
   }, []);
 
-  // Fetch historical events
   const fetchHistory = useCallback(async () => {
     try {
       const res = await fetch("/api/zabbix?action=events&limit=200");
@@ -99,7 +96,6 @@ export default function AlertsPage() {
     }
   }, []);
 
-  // Generate local alerts from store
   const generateLocalAlerts = useCallback((): LocalAlert[] => {
     const alerts: LocalAlert[] = [];
     const now = Date.now() / 1000;
@@ -138,7 +134,6 @@ export default function AlertsPage() {
     return alerts;
   }, [devices]);
 
-  // Load all data
   const loadData = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -172,24 +167,20 @@ export default function AlertsPage() {
     }
   }, [fetchActiveTriggers, fetchHistory, generateLocalAlerts]);
 
-  // Initial load on mount
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Refresh when devices store updates (triggered by Pusher WebSocket)
   useEffect(() => {
     if (devices.length > 0) {
       loadData();
     }
   }, [devices, loadData]);
 
-  // Helper: format timestamp
   const formatTime = (ts: string) => {
     return new Date(Number(ts) * 1000).toLocaleString();
   };
 
-  // Helper: calculate duration from a start timestamp
   const getDuration = (startTs: string) => {
     const start = Number(startTs) * 1000;
     const now = Date.now();
@@ -205,7 +196,6 @@ export default function AlertsPage() {
     return `${days}d ${hours % 24}h`;
   };
 
-  // Helper: priority label and color
   const getPriorityInfo = (priority: number | string) => {
     const p = typeof priority === 'string' ? parseInt(priority, 10) : priority;
     const labels = [
@@ -291,7 +281,6 @@ export default function AlertsPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Active Alerts Tab */}
         <TabsContent value="active">
           <Card>
             <CardHeader>
@@ -310,11 +299,9 @@ export default function AlertsPage() {
                 <div className="space-y-3">
                   {activeAlerts.map((alert) => {
                     const isLocal = 'type' in alert && alert.type === 'local';
-                    // Host name: use the provided host from the alert data
                     const hostName = isLocal
                       ? (alert as LocalAlert).host || 'Unknown'
                       : (alert as ZabbixTrigger).hosts?.[0]?.name || (alert as ZabbixTrigger).hosts?.[0]?.host || 'Unknown';
-                    // Description: full description (without stripping host)
                     const description = isLocal
                       ? (alert as LocalAlert).message
                       : (alert as ZabbixTrigger).description;

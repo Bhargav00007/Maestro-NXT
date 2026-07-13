@@ -43,7 +43,6 @@ export class ZabbixAPI {
       id: id,
     };
 
-    // For user.login, params should be at root level, not nested
     if (method === "user.login") {
       body.params = params;
     } else {
@@ -75,7 +74,6 @@ export class ZabbixAPI {
       }
 
       if (data.error) {
-        // Check if it's a version mismatch and try alternative format
         if (data.error.code === -32602 && data.error.data?.includes('unexpected parameter')) {
           throw new Error(`Zabbix API parameter error: ${data.error.data}. This might be a version mismatch.`);
         }
@@ -215,7 +213,6 @@ export class ZabbixAPI {
     return host[0] || null;
   }
 
-  // Add method to test connection
   async testConnection() {
     try {
       const version = await this.request("apiinfo.version", {});
@@ -226,7 +223,6 @@ export class ZabbixAPI {
   }
 }
 
-// Singleton instance
 let zabbixInstance: ZabbixAPI | null = null;
 
 export function getZabbixAPI(): ZabbixAPI {
