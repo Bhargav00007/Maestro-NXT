@@ -17,100 +17,54 @@ import { pixelFont } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
 import {
-  User,
-  ChevronsUpDown,
-  Calendar,
   Home,
-  Inbox,
-  Search,
-  Settings,
-  Menu,
-  Bug,
+    BookMarked,
+  HardDrive,
+      Search,
+    ChevronsLeftRightEllipsis,
   AlertTriangle,
+  Menu,
 } from "lucide-react";
+
+import Navbar from "@/components/Navbar";
 
 interface MySidebarProps {
   children: React.ReactNode;
 }
 
 const items = [
-  {
-    title: "Home",
-    url: "/",
-    icon: Home,
-  },
-  {
-    title: "About",
-    url: "/about",
-    icon: Inbox,
-  },
-  {
-    title: "Devices",
-    url: "/devices",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "/search",
-    icon: Search,
-  },
-  {
-    title: "Packets",
-    url: "/packets",
-    icon: Settings,
-  },
-  {
-    title: "Zabbix",
-    url: "/zabbix",
-    icon: Bug,
-  },
-  {
-    title: "Alerts",
-    url: "/alerts",
-    icon: AlertTriangle,
-  },
+  { title: "Home", url: "/", icon: Home },
+  { title: "About", url: "/about", icon: BookMarked },
+  { title: "Devices", url: "/devices", icon: HardDrive },
+  { title: "Search", url: "/search", icon: Search },
+  { title: "Zabbix", url: "/zabbix", icon: ChevronsLeftRightEllipsis },
+  { title: "Alerts", url: "/alerts", icon: AlertTriangle },
 ];
 
 function SidebarContentWrapper() {
   const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
 
   return (
-    <>
-      <SidebarContent>
-        <SidebarGroup>
-          <div className="px-3 py-4 mt-7">
-            {!isCollapsed ? (
-              <h1 className="text-lg font-semibold transition-opacity duration-300">
-                MAESTRO{" "}
-                <span className={`${pixelFont.className} text-xs`}>NXT</span>
-              </h1>
-            ) : (
-              <div className="flex justify-center">
-                <span className={`${pixelFont.className} text-xs`}>MN</span>
-              </div>
-            )}
-          </div>
-
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span className="transition-opacity duration-300">
-                        {item.title}
-                      </span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </>
+    <SidebarContent>
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {items.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild tooltip={item.title}>
+                  <a href={item.url}>
+                    <item.icon />
+                    <span className="transition-opacity duration-300">
+                      {item.title}
+                    </span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </SidebarContent>
   );
 }
 
@@ -120,12 +74,20 @@ function SidebarLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Sidebar collapsible="icon" className="transition-all duration-300 ease-in-out">
+      <Sidebar
+        collapsible="icon"
+        className={cn(
+          "transition-all duration-300 ease-in-out top-14",
+          !isCollapsed && "w-40"
+        )}
+      >
         <SidebarContentWrapper />
       </Sidebar>
 
       <div className="flex min-h-screen flex-1 flex-col transition-all duration-500 ease-in-out">
-        <div className="fixed left-4 top-4 z-50">
+        <Navbar />
+
+        <div className="fixed left-4 top-4 ">
           <SidebarTrigger>
             <Menu className="h-5 w-5" />
           </SidebarTrigger>
@@ -133,7 +95,7 @@ function SidebarLayout({ children }: { children: React.ReactNode }) {
 
         <main
           className={cn(
-            "flex-1 overflow-auto px-4 lg:pt-2 pt-10 transition-all duration-300 ease-in-out",
+            "flex-1 overflow-auto px-4 pt-14 transition-all duration-300 ease-in-out",
             !isCollapsed && "md:ml-[4rem]"
           )}
         >
