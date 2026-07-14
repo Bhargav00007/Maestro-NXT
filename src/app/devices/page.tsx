@@ -30,6 +30,7 @@ export default function ZabbixPage() {
   const [error, setError] = useState<string | null>(null);
 
   const zabbixDevices = devices;
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
   const getStatusBadge = (status?: string) => {
     if (status === "up" || status === "0") {
@@ -134,7 +135,7 @@ export default function ZabbixPage() {
             <Card
               key={device.id}
               className="cursor-pointer hover:shadow-lg transition-all hover:border-primary/50"
-              onClick={() => router.push(`/zabbix/details?hostId=${device.zabbixHostId}`)}
+              onClick={() => router.push(`${BASE_PATH}/zabbix/details?hostId=${device.zabbixHostId}`)}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="flex items-center gap-2 min-w-0">

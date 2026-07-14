@@ -19,6 +19,7 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
   const totalDevices = devices.length;
   const upDevices = devices.filter(d => d.status === "up").length;
   const downDevices = totalDevices - upDevices;
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
   const avgCpu = totalDevices > 0
     ? Math.round(devices.reduce((sum, d) => sum + d.cpu, 0) / totalDevices)
@@ -57,7 +58,7 @@ function RegionCard({ region, title, icon, devices, color, path }: RegionCardPro
           </div>
         </div>
         <button
-          onClick={() => router.push(path)}
+          onClick={() => router.push(`${BASE_PATH}${path}`)}
           className="text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded border border-gray-500 hover:border-primary"
         >
           View 

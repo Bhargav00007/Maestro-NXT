@@ -49,6 +49,7 @@ export default function DeviceCard({ device, history }: DeviceCardProps) {
   const router = useRouter();
   const statusColor = device.status === "up" ? "bg-green-500" : "bg-red-500";
   const statusText = device.status === "up" ? "Online" : "Offline";
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
   const formatTime = (timestamp: any): string => {
     if (!timestamp) return "";
@@ -131,9 +132,9 @@ export default function DeviceCard({ device, history }: DeviceCardProps) {
               size="sm"
               className=" "
               onClick={() =>
-                router.push(`/zabbix/details?hostId=${device.zabbixHostId}`)
+                router.push(`${BASE_PATH}/zabbix/details?hostId=${device.zabbixHostId}`)
               }
-              title="View in Zabbix"
+              title="View in Details"
             >
               View <Eye className="h-4 w-4 ml-1" />
             </Button>
