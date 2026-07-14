@@ -64,6 +64,14 @@ export default function AlertsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper: replace {HOST.NAME} and {HOST.HOST} with actual host name
+  const replaceHostPlaceholders = (text: string, hostName: string): string => {
+    if (!text) return text;
+    return text
+      .replace(/\{HOST\.NAME\}/g, hostName)
+      .replace(/\{HOST\.HOST\}/g, hostName);
+  };
+
   const fetchActiveTriggers = useCallback(async () => {
     try {
       const res = await fetch("/api/zabbix?action=problems");
@@ -84,7 +92,6 @@ export default function AlertsPage() {
     try {
       const res = await fetch("/api/zabbix?action=events&limit=200");
       const data = await res.json();
-      console.log("History API response:", data); // debug
       if (data.success && data.data) {
         const events = data.data.sort((a: ZabbixEvent, b: ZabbixEvent) => parseInt(b.clock) - parseInt(a.clock));
         return events;
@@ -299,12 +306,23 @@ export default function AlertsPage() {
                 <div className="space-y-3">
                   {activeAlerts.map((alert) => {
                     const isLocal = 'type' in alert && alert.type === 'local';
-                    const hostName = isLocal
-                      ? (alert as LocalAlert).host || 'Unknown'
-                      : (alert as ZabbixTrigger).hosts?.[0]?.name || (alert as ZabbixTrigger).hosts?.[0]?.host || 'Unknown';
-                    const description = isLocal
+                    // Get host name
+                    let hostName = 'Unknown';
+                    if (isLocal) {
+                      hostName = (alert as LocalAlert).host || 'Unknown';
+                    } else {
+                      const trigger = alert as ZabbixTrigger;
+                      hostName = trigger.hosts?.[0]?.name || trigger.hosts?.[0]?.host || 'Unknown';
+                    }
+                    // Get description and replace placeholders
+                    let description = isLocal
                       ? (alert as LocalAlert).message
                       : (alert as ZabbixTrigger).description;
+                    // Replace {HOST.NAME} and {HOST.HOST} with actual host name
+                    if (!isLocal) {
+                      description = replaceHostPlaceholders(description, hostName);
+                    }
+
                     const priority = isLocal
                       ? (alert as LocalAlert).priority
                       : parseInt((alert as ZabbixTrigger).priority, 10);
@@ -329,7 +347,6 @@ export default function AlertsPage() {
                         <div className="flex items-start gap-3">
                           {getAlertIcon(alert)}
                           <div>
-                            {/* Device name in bold, description on next line */}
                             <div className="flex flex-col">
                               <span className="font-bold text-sm">{hostName}</span>
                               <span className="text-xs text-muted-foreground">{description}</span>
@@ -371,7 +388,6 @@ export default function AlertsPage() {
           </Card>
         </TabsContent>
 
-        {/* Alert History Tab */}
         <TabsContent value="history">
           <Card>
             <CardHeader>
@@ -401,15 +417,18 @@ export default function AlertsPage() {
                     <tbody>
                       {historyEvents.map((event) => {
                         const trigger = event.triggers?.[0];
-                        const host = event.hosts?.[0]?.name || event.hosts?.[0]?.host || 'Unknown';
-                        const description = trigger?.description || 'Unknown trigger';
+                        const hostName = event.hosts?.[0]?.name || event.hosts?.[0]?.host || 'Unknown';
+                        let description = trigger?.description || 'Unknown trigger';
+                        // Replace placeholders in description
+                        description = replaceHostPlaceholders(description, hostName);
+
                         const priority = trigger ? parseInt(trigger.priority, 10) : 0;
                         const priorityInfo = getPriorityInfo(priority);
                         const isProblem = event.value === '1';
                         return (
                           <tr key={event.eventid} className="border-b hover:bg-muted/30">
                             <td className="p-2 text-xs">{formatTime(event.clock)}</td>
-                            <td className="p-2">{host}</td>
+                            <td className="p-2">{hostName}</td>
                             <td className="p-2">{description}</td>
                             <td className="p-2">
                               {isProblem ? (

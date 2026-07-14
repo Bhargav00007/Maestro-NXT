@@ -12,6 +12,7 @@ import { Plus, Minus, Home } from "lucide-react";
 import { useRouter } from "next/navigation"; 
 
 const hub = { name: "Hyderabad", lng: 78.4867, lat: 17.3850 };
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 const destinations = [
   { name: "Plainsboro", lng: -74.599, lat: 40.3345 },
@@ -149,7 +150,7 @@ export default function WorldMap() {
           <MapMarker
             longitude={hub.lng}
             latitude={hub.lat}
-            onClick={() => navigateTo("/hyderabad")}
+            onClick={() => navigateTo(`${BASE_PATH}/hyderabad`)}
           >
             <MarkerContent>
               <div className="size-2 rounded-full border-2 border-white bg-blue-500 shadow-md sm:size-3 cursor-pointer transition-transform hover:scale-110" />
@@ -163,12 +164,12 @@ export default function WorldMap() {
           </MapMarker>
 
           {destinations.map((dest) => (
-            <MapMarker
-              key={dest.name}
-              longitude={dest.lng}
-              latitude={dest.lat}
-              onClick={() => navigateTo(`/${dest.name.toLowerCase()}`)}
-            >
+           <MapMarker
+  key={dest.name}
+  longitude={dest.lng}
+  latitude={dest.lat}
+  onClick={() => navigateTo(`${BASE_PATH}/${dest.name.toLowerCase()}`)}
+>
               <MarkerContent>
                 <div className="size-1.5 rounded-full border-2 border-white bg-emerald-500 shadow sm:size-2 cursor-pointer transition-transform hover:scale-110" />
                 <MarkerLabel

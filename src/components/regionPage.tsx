@@ -26,6 +26,7 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
   const devices = useDeviceStore((state) => state.devices);
   const [history, setHistory] = useState<Record<string, HistoryItem[]>>({});
   const [filterType, setFilterType] = useState<string | null>(null); // null = "All"
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
   const regionDevices = useMemo(() => {
     return devices.filter(d => d.region === region);
@@ -109,7 +110,7 @@ export default function RegionPage({ region, title, icon, color }: RegionPagePro
   return (
     <div className="space-y-6">
       <button
-        onClick={() => router.push("/")}
+        onClick={() => router.push(`${BASE_PATH}/`)}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
