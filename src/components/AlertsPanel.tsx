@@ -19,6 +19,7 @@ export default function AlertsPanel() {
   const [zabbixProblems, setZabbixProblems] = useState<ZabbixTrigger[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
   const fetchZabbixProblems = useCallback(async () => {
     try {
@@ -179,7 +180,7 @@ export default function AlertsPanel() {
             <span className="text-[10px] text-muted-foreground sm:text-xs">
               {allAlerts.length} Active
             </span>
-            <a href="/alerts" className="text-[10px] text-muted-foreground hover:text-foreground sm:text-xs">
+            <a href={`${BASE_PATH}/alerts`} className="text-[10px] text-muted-foreground hover:text-foreground sm:text-xs">
               View All
             </a>
           </div>
