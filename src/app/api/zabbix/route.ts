@@ -16,7 +16,7 @@ async function zabbixRequest(method: string, params: any = {}, token?: string) {
 
   const response = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },  // use application/json
+    headers: { "Content-Type": "application/json" },  
     body: JSON.stringify(body),
   });
   const data = await response.json();
@@ -163,28 +163,24 @@ export async function GET(request: NextRequest) {
         break;
       }
 
-      // ===== FIXED EVENTS CASE =====
       case "events": {
-        // 1. Fetch only the basic event fields (avoid unsupported selects)
         const params: any = {
           output: ["eventid", "source", "object", "objectid", "clock", "value", "acknowledged", "ns"],
           sortfield: "clock",
           sortorder: "DESC",
           limit,
-          source: 0,                 // trigger events
-          object: 0,                // trigger objects
+          source: 0,                 
+          object: 0,                
         };
         if (hostId) params.hostids = hostId;
 
         const events = await zabbixRequest("event.get", params, token);
 
-        // 2. Extract all unique trigger IDs and host IDs from the events
         const triggerIds = events.map((e: any) => e.objectid).filter(Boolean);
         const hostIds = events
           .flatMap((e: any) => e.hosts ? e.hosts.map((h: any) => h.hostid) : [])
           .filter(Boolean);
 
-        // 3. Fetch trigger details (if any)
         let triggersMap: Record<string, any> = {};
         if (triggerIds.length > 0) {
           const triggerData = await zabbixRequest(
@@ -196,19 +192,15 @@ export async function GET(request: NextRequest) {
             },
             token
           );
-          // Build lookup: triggerid -> trigger object
           triggersMap = triggerData.reduce((acc: any, t: any) => {
             acc[t.triggerid] = t;
             return acc;
           }, {});
         }
 
-        // 4. Attach hosts and triggers to each event
         const enrichedEvents = events.map((event: any) => {
           const trigger = triggersMap[event.objectid] || null;
-          // If the event didn't already have hosts, try to get from the trigger
           let hosts = event.hosts || (trigger ? trigger.hosts : []);
-          // If still no hosts, we might need to fetch host by hostid (skip for brevity)
           return {
             ...event,
             hosts,
@@ -219,7 +211,6 @@ export async function GET(request: NextRequest) {
         result = enrichedEvents;
         break;
       }
-      // ===== END FIX =====
 
       case "graph": {
         if (!graphId) {
