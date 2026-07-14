@@ -82,6 +82,8 @@ interface ExtraMetrics {
 }
 
 export default function ZabbixDeviceDetailPage() {
+  const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const hostId = searchParams.get("hostId");
@@ -456,7 +458,7 @@ export default function ZabbixDeviceDetailPage() {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-red-500">Error Loading Device</h3>
           <p className="text-muted-foreground mt-2">{error}</p>
-          <Button onClick={() => router.push("/zabbix")} className="mt-4">
+          <Button onClick={() => router.push(`${BASE_PATH}/zabbix`)} className="mt-4">
             Back
           </Button>
         </div>
@@ -469,7 +471,7 @@ export default function ZabbixDeviceDetailPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <p className="text-muted-foreground">Device not found</p>
-          <Button onClick={() => router.push("/zabbix")} className="mt-4">
+          <Button onClick={() => router.push(`${BASE_PATH}/zabbix`)} className="mt-4">
             Back
           </Button>
         </div>
@@ -487,7 +489,7 @@ export default function ZabbixDeviceDetailPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push("/zabbix")}
+            onClick={() => router.push(`${BASE_PATH}/zabbix`)}
             className="h-8 w-8 p-0"
           >
             <ArrowLeft className="h-4 w-4" />
