@@ -17,6 +17,8 @@
     "@radix-ui/react-tooltip": "^1.2.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dom-to-image-more": "^3.10.2",
+    "html2canvas": "^1.4.1",
     "lucide-react": "^1.21.0",
     "maplibre-gl": "^5.24.0",
     "motion": "^12.42.2",
