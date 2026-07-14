@@ -26,14 +26,7 @@ export default function AIChat({
 }: AIChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: welcomeMessage,
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +35,31 @@ export default function AIChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem('aiChatMessages');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })));
+          return;
+        }
+      } catch {}
+    }
+    setMessages([
+      {
+        id: 'welcome',
+        role: 'assistant',
+        content: welcomeMessage,
+        timestamp: new Date(),
+      },
+    ]);
+  }, [welcomeMessage]);
+
+  useEffect(() => {
+    sessionStorage.setItem('aiChatMessages', JSON.stringify(messages));
+  }, [messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -55,13 +73,12 @@ export default function AIChat({
 
   const captureWebpage = async (): Promise<string | null> => {
     try {
-      // Target the main content (adjust selector)
       let target = document.getElementById('__next');
       if (!target) target = document.querySelector('main') as HTMLElement;
       if (!target) target = document.body;
 
       const dataUrl = await domtoimage.toJpeg(target, {
-        quality: 0.6,           // lower quality for speed
+        quality: 0.6,
         bgcolor: '#ffffff',
         width: window.innerWidth,
         height: window.innerHeight,
@@ -76,6 +93,54 @@ export default function AIChat({
       setError('Could not capture the page. Please refresh and try again.');
       return null;
     }
+  };
+
+  const formatMessage = (content: string): React.ReactNode => {
+    const lines = content.split('\n');
+    const elements: React.ReactNode[] = [];
+    let listItems: React.ReactNode[] = [];
+    let inList = false;
+
+    const renderInline = (text: string) => {
+      const parts = text.split(/(\*\*.*?\*\*)/g);
+      return parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i}>{part.slice(2, -2)}</strong>;
+        }
+        return part;
+      });
+    };
+
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+        inList = true;
+        listItems.push(
+          <li key={`li-${idx}`} className="ml-4 list-disc">
+            {renderInline(trimmed.slice(2))}
+          </li>
+        );
+      } else {
+        if (inList && listItems.length > 0) {
+          elements.push(<ul key={`ul-${idx}`} className="mb-1">{listItems}</ul>);
+          listItems = [];
+          inList = false;
+        }
+        if (trimmed) {
+          elements.push(
+            <p key={`p-${idx}`} className="mb-1">
+              {renderInline(trimmed)}
+            </p>
+          );
+        } else {
+          elements.push(<br key={`br-${idx}`} />);
+        }
+      }
+    });
+    if (inList && listItems.length > 0) {
+      elements.push(<ul key="ul-final">{listItems}</ul>);
+    }
+    return elements;
   };
 
   const sendMessage = async (e?: FormEvent) => {
@@ -171,7 +236,7 @@ export default function AIChat({
     <>
       <button
         onClick={toggleOpen}
-        className="chat-toggle-button fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full text-white shadow-lg hover:shadow-xl transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
+        className="chat-toggle-button fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl text-white shadow-lg hover:shadow-xl transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
         style={{ backgroundColor: primaryColor }}
         aria-label={isOpen ? 'Close chat' : 'Open chat'}
       >
@@ -218,7 +283,9 @@ export default function AIChat({
                       }`}
                       style={message.role === 'user' ? { backgroundColor: primaryColor } : {}}
                     >
-                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                      <div className="text-sm whitespace-pre-wrap break-words">
+                        {formatMessage(message.content)}
+                      </div>
                       <span
                         className={`text-[10px] mt-1 block ${
                           message.role === 'user' ? 'text-white/70' : 'text-gray-400 dark:text-gray-500'
