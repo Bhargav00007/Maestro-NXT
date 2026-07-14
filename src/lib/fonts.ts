@@ -1,6 +1,6 @@
-import { Press_Start_2P } from "next/font/google";
+import localFont from "next/font/local";
 
-export const pixelFont = Press_Start_2P({
-  weight: "400",
-  subsets: ["latin"],
+export const pixelFont = localFont({
+  src: "../../public/font/PressStart2P-Regular.ttf",
+  display: "swap",
 });
