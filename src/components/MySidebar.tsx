@@ -13,15 +13,14 @@ import {
   useSidebar,
 } from "@/components/sidebar";
 
-import { pixelFont } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
 import {
   Home,
-    BookMarked,
+  BookMarked,
   HardDrive,
-      Search,
-    ChevronsLeftRightEllipsis,
+  Search,
+  ChevronsLeftRightEllipsis,
   AlertTriangle,
   Menu,
 } from "lucide-react";
@@ -31,6 +30,8 @@ import Navbar from "@/components/Navbar";
 interface MySidebarProps {
   children: React.ReactNode;
 }
+
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 const items = [
   { title: "Home", url: "/", icon: Home },
@@ -42,8 +43,6 @@ const items = [
 ];
 
 function SidebarContentWrapper() {
-  const { state } = useSidebar();
-
   return (
     <SidebarContent>
       <SidebarGroup>
@@ -52,7 +51,7 @@ function SidebarContentWrapper() {
             {items.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <a href={item.url}>
+                  <a href={`${BASE_PATH}${item.url}`}>
                     <item.icon />
                     <span className="transition-opacity duration-300">
                       {item.title}
@@ -78,7 +77,7 @@ function SidebarLayout({ children }: { children: React.ReactNode }) {
         collapsible="icon"
         className={cn(
           "transition-all duration-300 ease-in-out top-14",
-          !isCollapsed && "w-40"
+          !isCollapsed && "w-30"
         )}
       >
         <SidebarContentWrapper />
@@ -87,7 +86,7 @@ function SidebarLayout({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen flex-1 flex-col transition-all duration-500 ease-in-out">
         <Navbar />
 
-        <div className="fixed left-4 top-4 ">
+        <div className="fixed left-4 top-4">
           <SidebarTrigger>
             <Menu className="h-5 w-5" />
           </SidebarTrigger>

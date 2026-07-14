@@ -21,7 +21,7 @@ export default function Navbar() {
           <SidebarTrigger className="h-8 w-8 rounded-md hover:bg-accent hover:text-accent-foreground flex items-center justify-center">
             <Menu className="h-5 w-5" />
           </SidebarTrigger>
-          <h1 className="text-xl font-semibold transition-opacity duration-300">
+          <h1 className="text-xl font-semibold transition-opacity duration-300 ">
               MAESTRO{" "}
               <span className={`${pixelFont.className} text-xs`}>NXT</span>
             </h1>
