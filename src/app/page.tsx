@@ -43,7 +43,7 @@ function HomeContent() {
         <div 
           className={cn(
             "mx-auto space-y-4 sm:space-y-6 transition-all duration-300 ease-in-out",
-            !isCollapsed ? "max-w-6xl" : "max-w-7xl"
+            !isCollapsed ? "lg:max-w-6xl xl:max-w-7xl" : "lg:max-w-7xl xl:max-w-8xl"
           )}
         >
           <div className="flex flex-col gap-3 lg:gap-6 lg:grid lg:grid-cols-[3fr_1fr]">
