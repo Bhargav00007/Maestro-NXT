@@ -18,11 +18,14 @@ interface AIChatProps {
   chatTitle?: string;
 }
 
+const CONTEXT_MESSAGE =
+  "You are WatchWing AI, an assistant for the Maestro NXT network monitoring system. You have access to the user's screen (they capture it when they send a message). You help with alerts, troubleshooting, monitoring system queries, and general assistance. You are friendly and concise. When referring to the system, call it 'Maestro NXT'.";
+
 export default function AIChat({
   apiUrl = 'https://watchwing.vercel.app/api/describe',
-  welcomeMessage = "Hi there! I'm WatchWing AI. I can see your screen and help you with testing, debugging, or anything you're working on. What can I assist you with?",
-  inputPlaceholder = 'Ask about your screen or testing...',
-  chatTitle = 'WatchWing AI',
+  welcomeMessage = "I'm WatchWing AI, your Maestro NXT assistant. I can see your screen and help with alerts, troubleshooting, and monitoring. What can I do for you?",
+  inputPlaceholder = 'Ask about your screen, alerts, or monitoring...',
+  chatTitle = 'WatchWing AI • Maestro NXT',
 }: AIChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -173,8 +176,11 @@ export default function AIChat({
     }
 
     try {
+      // Prepend context to the user's prompt
+      const fullPrompt = `${CONTEXT_MESSAGE}\n\nUser question: ${trimmed}`;
+
       const requestBody = {
-        prompt: trimmed,
+        prompt: fullPrompt,
         image: imageDataUrl,
       };
 
