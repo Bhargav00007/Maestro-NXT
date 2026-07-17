@@ -246,7 +246,7 @@ export default function AlertsPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-5xl">
+    <div className="container mx-auto p-4 max-w-5xl xl:max-w-full px-20">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Alerts</h1>

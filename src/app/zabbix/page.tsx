@@ -101,7 +101,7 @@ const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6 max-w-5xl">
+    <div className="container mx-auto py-8 space-y-6 max-w-5xl xl:max-w-full xl:px-20">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Zabbix Devices</h1>

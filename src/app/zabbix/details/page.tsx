@@ -482,7 +482,7 @@ export default function ZabbixDeviceDetailPage() {
   const statusBadgeColor = device.status === "up" ? "bg-green-500" : "bg-red-500";
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto p-4">
+    <div className="space-y-6 max-w-5xl xl:max-w-full xl:px-20 mx-auto p-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">

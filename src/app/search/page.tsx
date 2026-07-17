@@ -50,7 +50,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-5xl p-4 sm:p-6">
+    <div className="container mx-auto max-w-5xl p-4 sm:p-6 xl:max-w-full xl:px-20">
       <div className="flex flex-col items-center justify-start pt-12 sm:pt-16 md:pt-20">
         <div className="w-full max-w-2xl">
           <div className="relative">
