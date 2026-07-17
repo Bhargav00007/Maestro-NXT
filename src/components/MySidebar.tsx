@@ -35,11 +35,13 @@ const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 const items = [
   { title: "Home", url: "/", icon: Home },
-  { title: "About", url: "/about", icon: BookMarked },
+    { title: "Alerts", url: "/alerts", icon: AlertTriangle },
+      { title: "Search", url: "/search", icon: Search },
+
   { title: "Devices", url: "/devices", icon: HardDrive },
-  { title: "Search", url: "/search", icon: Search },
   { title: "Zabbix", url: "/zabbix", icon: ChevronsLeftRightEllipsis },
-  { title: "Alerts", url: "/alerts", icon: AlertTriangle },
+    { title: "About", url: "/about", icon: BookMarked },
+
 ];
 
 function SidebarContentWrapper() {
