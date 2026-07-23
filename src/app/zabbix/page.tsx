@@ -109,13 +109,12 @@ const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
             {zabbixDevices.length} devices monitored
           </p>
         </div>
-        <a href="/zabbixtest">
+        <div>
+        <Button variant="outline" size="sm"><a href="/zabbixtest">
           Raw data
-        </a>
-        <Button onClick={() => window.location.reload()} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        </a></Button>
+        
+        </div>
       </div>
 
       {error && (

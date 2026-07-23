@@ -622,7 +622,6 @@ export default function ZabbixDeviceDetailPage() {
         </Card>
       </div>
 
-      {/* Tabs */}
       <div className="border rounded-lg overflow-hidden">
         <div className="flex border-b bg-muted/50">
           <button
